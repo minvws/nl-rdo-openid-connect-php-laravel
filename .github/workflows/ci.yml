@@ -28,26 +28,12 @@ jobs:
                     php: 8.0
 
         name: PHP ${{ matrix.php }} - L${{ matrix.laravel }}
-        env:
-            PHP: ${{ matrix.os }}
-            PHP_VERSION: ${{ matrix.php }}
-            COMPOSER_MEMORY_LIMIT: -1
         steps:
             - name: Checkout code
-              uses: actions/checkout@v2
-
-            - name: Cache dependencies
-              uses: actions/cache@v2
-              with:
-                  path: ~/.composer/cache/files
-                  key: dependencies-laravel-${{ matrix.laravel }}-php-${{ matrix.php }}-composer-${{ hashFiles('composer.json') }}
-                  restore-keys: |
-                      dependencies-laravel-${{ matrix.laravel }}-php-${{ matrix.php }}-composer-
-                      dependencies-laravel-${{ matrix.laravel }}-php-
-                      dependencies-laravel-
+              uses: actions/checkout@v3
 
             - name: Install PHP
-              uses: shivammathur/setup-php@master
+              uses: shivammathur/setup-php@v2
               with:
                   php-version: ${{ matrix.php }}
                   extensions: xdebug, zip
@@ -56,6 +42,12 @@ jobs:
               run: |
                   composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
                   composer update --${{ matrix.stability }} --prefer-dist --no-interaction
+
+            - name: Setup problem matchers for PHP
+              run: echo "::add-matcher::${{ runner.tool_cache }}/php.json"
+
+            - name: Setup problem matchers for PHPUnit
+              run: echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
 
             - name: Execute tests (Unit and Feature)
               run: vendor/bin/phpunit
