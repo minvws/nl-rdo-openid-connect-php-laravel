@@ -44,6 +44,7 @@
         "psalm": "vendor/bin/psalm"
     },
     "config": {
+        "lock": false,
         "allow-plugins": {
             "dealerdirect/phpcodesniffer-composer-installer": true
         }
