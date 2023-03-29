@@ -35,9 +35,19 @@ return [
     'code_challenge_method' => env('OIDC_CODE_CHALLENGE_METHOD', 'S256'),
 
     /**
-     * TTL of the OpenID configuration cache in seconds.
+     * Configuration Cache
      */
-    'configuration_cache_ttl' => env('OIDC_CONFIGURATION_CACHE_TTL', 60 * 60 * 24),
+    'configuration_cache' => [
+        /**
+         * The cache store to use.
+         */
+        'store' => env('OIDC_CONFIGURATION_CACHE_DRIVER', 'file'),
+
+        /**
+         * The cache TTL in seconds.
+         */
+        'ttl' => env('OIDC_CONFIGURATION_CACHE_TTL', 60 * 60 * 24),
+    ],
 
     /**
      * Route configuration

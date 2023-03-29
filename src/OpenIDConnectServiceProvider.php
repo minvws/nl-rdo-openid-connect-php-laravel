@@ -64,8 +64,8 @@ class OpenIDConnectServiceProvider extends ServiceProvider
         $this->app->singleton(OpenIDConfigurationLoader::class, function (Application $app) {
             return new OpenIDConfigurationLoader(
                 $app['config']->get('oidc.issuer'),
-                $app['config']->get('oidc.cache_ttl'),
-                $app['config']->get('oidc.cache_store'),
+                $app['cache']->store($app['config']->get('oidc.configuration_cache.store')),
+                $app['config']->get('oidc.configuration_cache.ttl'),
             );
         });
     }
@@ -75,7 +75,8 @@ class OpenIDConnectServiceProvider extends ServiceProvider
         $this->app->singleton(OpenIDConnectClient::class, function (Application $app) {
             $oidc = new OpenIDConnectClient(
                 providerUrl: $app['config']->get('oidc.issuer'),
-                jweDecrypter: $app->make(JweDecryptInterface::class)
+                jweDecrypter: $app->make(JweDecryptInterface::class),
+                openIDConfiguration: $app->make(OpenIDConfigurationLoader::class)->getConfiguration(),
             );
             $oidc->setClientID($app['config']->get('oidc.client_id'));
             if (!empty($app['config']->get('oidc.client_secret'))) {
