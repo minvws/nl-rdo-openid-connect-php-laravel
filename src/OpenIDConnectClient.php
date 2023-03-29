@@ -20,7 +20,11 @@ class OpenIDConnectClient extends BaseOpenIDConnectClient
         ?string $issuer = null,
         ?JweDecryptInterface $jweDecrypter = null
     ) {
-        parent::__construct($providerUrl, $clientId, $clientSecret, $issuer); // @phpstan-ignore-line
+        /**
+         * @phpstan-ignore-next-line Because parent constructor type block is wrong
+         * @psalm-suppress InvalidArgument
+         */
+        parent::__construct($providerUrl, $clientId, $clientSecret, $issuer);
 
         $this->jweDecrypter = $jweDecrypter;
     }
