@@ -200,6 +200,29 @@ class OpenIDConfigurationLoaderTest extends TestCase
         $this->assertEmpty($configuration->tokenEndpoint);
     }
 
+    public function testConfigurationIsLoadedMultipleTimesWhenCacheStoreIsNull(): void
+    {
+        $this->fakeSuccessfulResponse();
+
+        $loader = new OpenIDConfigurationLoader(
+            issuer: 'https://provider.rdobeheer.nl',
+            cacheStore: Cache::store('null'),
+        );
+
+        // Load 2 times
+        $loader->getConfiguration();
+        $configuration = $loader->getConfiguration();
+
+        Http::assertSentCount(2);
+
+        $this->assertSame("3.0", $configuration->version);
+        $this->assertSame("https://provider.rdobeheer.nl", $configuration->issuer);
+        $this->assertSame("https://provider.rdobeheer.nl/authorize", $configuration->authorizationEndpoint);
+        $this->assertSame("https://provider.rdobeheer.nl/jwks", $configuration->jwksUri);
+        $this->assertSame("https://provider.rdobeheer.nl/token", $configuration->tokenEndpoint);
+        $this->assertSame("https://provider.rdobeheer.nl/userinfo", $configuration->userinfoEndpoint);
+    }
+
     protected function fakeSuccessfulResponse(): void
     {
         Http::fake([
