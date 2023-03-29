@@ -16,7 +16,10 @@ class OpenIDConfigurationLoaderTest extends TestCase
     {
         parent::setUp();
 
-        Http::preventStrayRequests();
+        // Support for running tests with Laravel 8
+        if (method_exists(Http::class, 'preventStrayRequests')) {
+            Http::preventStrayRequests();
+        }
     }
 
     public function testConfigurationIsLoaded(): void
