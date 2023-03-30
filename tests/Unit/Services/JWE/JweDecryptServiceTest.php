@@ -10,12 +10,16 @@ use Jose\Component\Encryption\Algorithm\ContentEncryption\A128CBCHS256;
 use Jose\Component\Encryption\Algorithm\KeyEncryption\RSAOAEP;
 use Jose\Component\Encryption\Compression\CompressionMethodManager;
 use Jose\Component\Encryption\Compression\Deflate;
+use Jose\Component\Encryption\JWE;
 use Jose\Component\Encryption\JWEBuilder;
+use Jose\Component\Encryption\JWEDecrypter;
 use Jose\Component\Encryption\Serializer\CompactSerializer;
+use Jose\Component\Encryption\Serializer\JWESerializerManager;
 use Jose\Component\KeyManagement\JWKFactory;
 use JsonException;
 use MinVWS\OpenIDConnectLaravel\Services\JWE\JweDecryptException;
 use MinVWS\OpenIDConnectLaravel\Services\JWE\JweDecryptService;
+use Mockery;
 use OpenSSLAsymmetricKey;
 use OpenSSLCertificate;
 use OpenSSLCertificateSigningRequest;
@@ -108,10 +112,32 @@ class JweDecryptServiceTest extends TestCase
     public function testJweDecryptionThrowsExceptionWhenPayloadIsNull(): void
     {
         $this->expectException(JweDecryptException::class);
-        $this->expectExceptionMessage('Failed to decrypt JWE');
+        $this->expectExceptionMessage('Payload of JWE is null');
 
-        // Using mocks ....
-        $this->markTestIncomplete('Needs to be written');
+        $jweMock = Mockery::mock(JWE::class);
+        $jweMock
+            ->shouldReceive('getPayload')
+            ->andReturn(null);
+
+        $decryptionKey = Mockery::mock(JWK::class);
+        $serializerManager = Mockery::mock(JWESerializerManager::class);
+        $serializerManager
+            ->shouldReceive('unserialize')
+            ->with('something')
+            ->andReturn($jweMock);
+
+        $jweDecrypter = Mockery::mock(JWEDecrypter::class);
+        $jweDecrypter
+            ->shouldReceive('decryptUsingKey')
+            ->andReturn(true);
+
+        $decryptService = new JweDecryptService(
+            $decryptionKey,
+            $serializerManager,
+            $jweDecrypter,
+        );
+
+        $decryptService->decrypt('something');
     }
 
     protected function buildJweString(string $payload, JWK $recipient): string
@@ -154,7 +180,7 @@ class JweDecryptServiceTest extends TestCase
     }
 
     /**
-     * Generate OpenSSL Key and return the tempfile resource and tempfile path
+     * Generate OpenSSL Key and return the tempfile resource
      * @return array{OpenSSLAsymmetricKey, resource}
      */
     protected function generateOpenSSLKey(): array
