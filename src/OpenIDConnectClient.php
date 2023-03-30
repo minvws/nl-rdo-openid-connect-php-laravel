@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MinVWS\OpenIDConnectLaravel;
 
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use Jumbojett\OpenIDConnectClient as BaseOpenIDConnectClient;
@@ -107,5 +108,17 @@ class OpenIDConnectClient extends BaseOpenIDConnectClient
         }
 
         return $config->{$param};
+    }
+
+    /**
+     * Overwrite the redirect method to use Laravel's abort method.
+     * Sometimes the error 'Cannot modify header information - headers already sent' was thrown.
+     * By using Laravel's abort method, this error is prevented.
+     * @param string $url
+     * @return void
+     */
+    public function redirect($url): void
+    {
+        App::abort(302, '', ['Location' => $url]);
     }
 }
