@@ -7,6 +7,7 @@ namespace MinVWS\OpenIDConnectLaravel\Tests\Feature\Http\Controllers;
 use Illuminate\Support\Facades\Http;
 use MinVWS\OpenIDConnectLaravel\OpenIDConfiguration\OpenIDConfiguration;
 use MinVWS\OpenIDConnectLaravel\OpenIDConfiguration\OpenIDConfigurationLoader;
+use MinVWS\OpenIDConnectLaravel\OpenIDConnectClient;
 use MinVWS\OpenIDConnectLaravel\Tests\TestCase;
 use Mockery;
 
@@ -22,7 +23,7 @@ class LoginControllerTest extends TestCase
         }
     }
 
-    public function testRouteIsAccessible(): void
+    public function testLoginRouteRedirectsToAuthorizeUrlOfProvider(): void
     {
         $this->mockOpenIDConfigurationLoader();
 
@@ -33,6 +34,34 @@ class LoginControllerTest extends TestCase
             ->assertStatus(302)
             ->assertRedirectContains("https://provider.rdobeheer.nl/authorize")
             ->assertRedirectContains('test-client-id');
+    }
+
+    public function testLoginRouteReturnsUserInfoWitchMockedClient(): void
+    {
+        $mockClient = Mockery::mock(OpenIDConnectClient::class);
+        $mockClient
+            ->shouldReceive('authenticate')
+            ->once();
+
+        $mockClient
+            ->shouldReceive('requestUserInfo')
+            ->andReturn((object) [
+                'sub' => 'test-sub',
+                'name' => 'test-name',
+                'email' => 'test-email',
+            ]);
+
+        $this->app->instance(OpenIDConnectClient::class, $mockClient);
+
+        $response = $this->get(route('oidc.login'));
+        $response
+            ->assertJson([
+                'userInfo' => [
+                    'sub' => 'test-sub',
+                    'name' => 'test-name',
+                    'email' => 'test-email',
+                ],
+            ]);
     }
 
     protected function mockOpenIDConfigurationLoader(): void
