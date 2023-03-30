@@ -7,6 +7,7 @@ namespace MinVWS\OpenIDConnectLaravel;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Jose\Component\KeyManagement\JWKFactory;
 use MinVWS\OpenIDConnectLaravel\Http\Responses\LoginResponse;
 use MinVWS\OpenIDConnectLaravel\Http\Responses\LoginResponseInterface;
 use MinVWS\OpenIDConnectLaravel\OpenIDConfiguration\OpenIDConfigurationLoader;
@@ -94,8 +95,16 @@ class OpenIDConnectServiceProvider extends ServiceProvider
 
     protected function registerJweDecryptInterface(): void
     {
+        if (empty(config('oidc.decryption_key_path'))) {
+            $this->app->singleton(JweDecryptInterface::class, function () {
+                return null;
+            });
+            return;
+        }
+
         $this->app->singleton(JweDecryptInterface::class, function (Application $app) {
-            return new JweDecryptService(decryptionKeyPath: $app['config']->get('oidc.decryption_key_path'));
+            $jwk = JWKFactory::createFromKeyFile($app['config']->get('oidc.decryption_key_path'));
+            return new JweDecryptService(decryptionKey: $jwk);
         });
     }
 
