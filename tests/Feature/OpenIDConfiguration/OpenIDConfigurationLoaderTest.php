@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MinVWS\OpenIDConnectLaravel\Tests\Feature;
+namespace MinVWS\OpenIDConnectLaravel\Tests\Feature\OpenIDConfiguration;
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;

@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace MinVWS\OpenIDConnectLaravel\Http\Responses;
 
-use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class LoginResponse implements Responsable
+class LoginResponse implements LoginResponseInterface
 {
     public function __construct(
         protected object $userInfo
