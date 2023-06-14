@@ -20,6 +20,7 @@ class JweDecryptService implements JweDecryptInterface
      * @param JWK $decryptionKey
      * @param JWESerializerManager $serializerManager
      * @param JWEDecrypter $jweDecrypter
+     * phpcs:disable Squiz.Functions.MultiLineFunctionDeclaration.Indent -- waiting for phpcs 3.8.0
      */
     public function __construct(
         protected JWK $decryptionKey,
@@ -33,6 +34,7 @@ class JweDecryptService implements JweDecryptInterface
     }
 
     /**
+     * phpcs:enable
      * @throws JweDecryptException
      */
     public function decrypt(string $jweString): string
