@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace MinVWS\OpenIDConnectLaravel;
 
-use Illuminate\Support\Facades\App;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use Jumbojett\OpenIDConnectClient as BaseOpenIDConnectClient;
@@ -119,6 +120,6 @@ class OpenIDConnectClient extends BaseOpenIDConnectClient
      */
     public function redirect($url): void
     {
-        App::abort(302, '', ['Location' => $url]);
+        throw new HttpResponseException(new RedirectResponse($url));
     }
 }
