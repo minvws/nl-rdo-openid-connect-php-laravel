@@ -13,27 +13,36 @@ use Jose\Component\Encryption\Compression\Deflate;
 use Jose\Component\Encryption\JWEDecrypter;
 use Jose\Component\Encryption\Serializer\CompactSerializer;
 use Jose\Component\Encryption\Serializer\JWESerializerManager;
-use Jose\Component\KeyManagement\JWKFactory;
 
 class JweDecryptService implements JweDecryptInterface
 {
+    /**
+     * @param JWK $decryptionKey
+     * @param JWESerializerManager $serializerManager
+     * @param JWEDecrypter $jweDecrypter
+     * phpcs:disable Squiz.Functions.MultiLineFunctionDeclaration.Indent -- waiting for phpcs 3.8.0
+     */
     public function __construct(
-        protected string $decryptionKeyPath,
+        protected JWK $decryptionKey,
+        protected JWESerializerManager $serializerManager = new JWESerializerManager([new CompactSerializer()]),
+        protected JWEDecrypter $jweDecrypter = new JWEDecrypter(
+            new AlgorithmManager([new RSAOAEP()]),
+            new AlgorithmManager([new A128CBCHS256()]),
+            new CompressionMethodManager([new Deflate()])
+        ),
     ) {
     }
 
     /**
+     * phpcs:enable
      * @throws JweDecryptException
      */
     public function decrypt(string $jweString): string
     {
-        $jweDecrypter = $this->getDecrypter();
-
-        $serializerManager = new JWESerializerManager([new CompactSerializer()]);
-        $jwe = $serializerManager->unserialize($jweString);
+        $jwe = $this->serializerManager->unserialize($jweString);
 
         // Success of decryption, $jwe is now decrypted
-        $success = $jweDecrypter->decryptUsingKey($jwe, $this->getDecryptionKey(), 0);
+        $success = $this->jweDecrypter->decryptUsingKey($jwe, $this->decryptionKey, 0);
         if (!$success) {
             throw new JweDecryptException('Failed to decrypt JWE');
         }
@@ -44,23 +53,5 @@ class JweDecryptService implements JweDecryptInterface
         }
 
         return $payload;
-    }
-
-    protected function getDecrypter(): JWEDecrypter
-    {
-        $keyEncryptionAlgorithmManager = new AlgorithmManager([new RSAOAEP()]);
-        $contentEncryptionAlgorithmManager = new AlgorithmManager([new A128CBCHS256()]);
-        $compressionMethodManager = new CompressionMethodManager([new Deflate()]);
-
-        return new JWEDecrypter(
-            $keyEncryptionAlgorithmManager,
-            $contentEncryptionAlgorithmManager,
-            $compressionMethodManager
-        );
-    }
-
-    protected function getDecryptionKey(): JWK
-    {
-        return JWKFactory::createFromKeyFile($this->decryptionKeyPath);
     }
 }
