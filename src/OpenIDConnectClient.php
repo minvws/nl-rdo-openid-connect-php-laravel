@@ -96,7 +96,7 @@ class OpenIDConnectClient extends BaseOpenIDConnectClient
      * Use cached OpenID configuration if available.
      *
      * @param string $param
-     * @param string $default optional
+     * @param string|string[]|bool|null $default optional
      * @throws OpenIDConnectClientException
      * @return string|string[]|bool
      * @psalm-suppress ImplementedReturnTypeMismatch

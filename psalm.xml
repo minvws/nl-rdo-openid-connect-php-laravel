@@ -11,6 +11,7 @@
     <projectFiles>
         <directory name="src" />
         <ignoreFiles>
+            <file name="src/BaseOpenIDConnectClient.php" />
             <directory name="vendor" />
         </ignoreFiles>
     </projectFiles>

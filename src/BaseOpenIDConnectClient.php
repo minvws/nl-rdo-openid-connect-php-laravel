@@ -1,4 +1,7 @@
 <?php
+
+// phpcs:ignoreFile -- this is copied from an open PR
+
 /**
  *
  * Copyright MITRE 2020
@@ -25,6 +28,7 @@ namespace MinVWS\OpenIDConnectLaravel;
 
 use Error;
 use Exception;
+use Jumbojett\OpenIDConnectClientException;
 use phpseclib3\Crypt\PublicKeyLoader;
 use phpseclib3\Crypt\RSA;
 use phpseclib3\Math\BigInteger;
@@ -59,14 +63,6 @@ function b64url2b64(string $base64url): string
         $base64url .= str_repeat('=', 4 - $padding);
     }
     return strtr($base64url, '-_', '+/');
-}
-
-
-/**
- * OpenIDConnect Exception Class
- */
-class OpenIDConnectClientException extends Exception
-{
 }
 
 /**
@@ -589,8 +585,8 @@ class BaseOpenIDConnectClient
      * Gets anything that we need configuration wise including endpoints, and other values
      *
      * @param string $param
-     * @param string|array|bool|null $default optional
-     * @return string|array|bool|null
+     * @param string|string[]|bool|null $default optional
+     * @return string|string[]|bool
      *
      * @throws OpenIDConnectClientException
      */
@@ -609,8 +605,8 @@ class BaseOpenIDConnectClient
      * Gets anything that we need configuration wise including endpoints, and other values
      *
      * @param string $param
-     * @param string|array|bool|null $default optional
-     * @return string|array|bool|null
+     * @param string|string[]|bool|null $default optional
+     * @return string|string[]|bool
      *
      * @throws OpenIDConnectClientException
      */
