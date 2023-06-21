@@ -8,11 +8,17 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
-use Jumbojett\OpenIDConnectClient as BaseOpenIDConnectClient;
 use Jumbojett\OpenIDConnectClientException;
 use MinVWS\OpenIDConnectLaravel\OpenIDConfiguration\OpenIDConfiguration;
 use MinVWS\OpenIDConnectLaravel\Services\JWE\JweDecryptInterface;
 
+/**
+ * OpenID Connect Client for Laravel
+ *
+ * This class is currently extending a copied OpenIDConnectClient class from
+ * this PR https://github.com/jumbojett/OpenID-Connect-PHP/pull/376 because
+ * we need the changes now. It is intended to remove the copied class when the PR is merged.
+ */
 class OpenIDConnectClient extends BaseOpenIDConnectClient
 {
     protected ?JweDecryptInterface $jweDecrypter;
