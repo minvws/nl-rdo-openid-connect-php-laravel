@@ -86,8 +86,9 @@ class OpenIDConnectServiceProvider extends ServiceProvider
             $oidc->setCodeChallengeMethod($app['config']->get('oidc.code_challenge_method'));
             $oidc->setRedirectURL($app['url']->route('oidc.login'));
 
-            foreach ($app['config']->get('oidc.additional_scopes') as $scope) {
-                $oidc->addScope($scope);
+            $additionalScopes = $app['config']->get('oidc.additional_scopes');
+            if (is_array($additionalScopes) && count($additionalScopes) > 0) {
+                $oidc->addScope($additionalScopes);
             }
             return $oidc;
         });
