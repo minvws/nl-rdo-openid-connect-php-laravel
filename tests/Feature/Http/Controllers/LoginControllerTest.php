@@ -40,6 +40,9 @@ class LoginControllerTest extends TestCase
     {
         $mockClient = Mockery::mock(OpenIDConnectClient::class);
         $mockClient
+            ->shouldReceive('setLoginHint')
+            ->once();
+        $mockClient
             ->shouldReceive('authenticate')
             ->once();
 
