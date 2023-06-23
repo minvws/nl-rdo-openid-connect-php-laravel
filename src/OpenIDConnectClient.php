@@ -23,6 +23,7 @@ class OpenIDConnectClient extends BaseOpenIDConnectClient
 {
     protected ?JweDecryptInterface $jweDecrypter;
     protected ?OpenIDConfiguration $openIDConfiguration;
+    protected ?string $loginHint = null;
 
     public function __construct(
         ?string $providerUrl = null,
@@ -118,14 +119,55 @@ class OpenIDConnectClient extends BaseOpenIDConnectClient
     }
 
     /**
-     * Overwrite the redirect method to use Laravel's abort method.
+     * Set login hint when redirecting to authorization endpoint.
+     * Is used when redirecting to the authorization endpoint.
+     * @param string|null $loginHint
+     * @return void
+     */
+    public function setLoginHint(?string $loginHint = null): void
+    {
+        $this->loginHint = $loginHint;
+    }
+
+    /**
+     * Overwrite the redirect method to a redirect method of Laravel.
+     * And add login_hint when redirecting to the authorization endpoint.
      * Sometimes the error 'Cannot modify header information - headers already sent' was thrown.
-     * By using Laravel's abort method, this error is prevented.
+     * By using HttpResponseException, laravel will return the given response.
      * @param string $url
      * @return void
+     * @throws OpenIDConnectClientException
      */
     public function redirect($url): void
     {
+        $authorizationEndpoint = $this->getAuthorizationEndpoint();
+        if (
+            !empty($this->loginHint)
+            && str_starts_with($url, $authorizationEndpoint)
+        ) {
+            $url .= "&" . http_build_query(['login_hint' => $this->loginHint]);
+        }
+
         throw new HttpResponseException(new RedirectResponse($url));
+    }
+
+    /**
+     * Get authorization_endpoint from openid configuration.
+     * @throws OpenIDConnectClientException
+     */
+    protected function getAuthorizationEndpoint(): string
+    {
+        if ($this->openIDConfiguration !== null) {
+            return $this->openIDConfiguration->authorizationEndpoint;
+        }
+
+        $authorizationEndpoint = $this->getWellKnownConfigValue('authorization_endpoint');
+        if (!is_string($authorizationEndpoint)) {
+            throw new OpenIDConnectClientException(
+                'No authorization endpoint found in well-known config.'
+            );
+        }
+
+        return $authorizationEndpoint;
     }
 }
