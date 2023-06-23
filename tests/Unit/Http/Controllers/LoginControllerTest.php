@@ -51,6 +51,9 @@ class LoginControllerTest extends TestCase
     {
         $mockClient = Mockery::mock(OpenIDConnectClient::class);
         $mockClient
+            ->shouldReceive('setLoginHint')
+            ->once();
+        $mockClient
             ->shouldReceive('authenticate')
             ->andThrow(OpenIDConnectClientException::class);
 
@@ -64,12 +67,15 @@ class LoginControllerTest extends TestCase
             $mockExceptionHandler,
         );
 
-        $loginController->__invoke();
+        $loginController->__invoke(new Request());
     }
 
     public function testExceptionHandlerIsCalledWhenRequestUserInfoDoesNotReturnAnObject(): void
     {
         $mockClient = Mockery::mock(OpenIDConnectClient::class);
+        $mockClient
+            ->shouldReceive('setLoginHint')
+            ->once();
         $mockClient->shouldReceive('authenticate')->once();
         $mockClient
             ->shouldReceive('requestUserInfo')
@@ -89,12 +95,15 @@ class LoginControllerTest extends TestCase
             $mockExceptionHandler,
         );
 
-        $loginController->__invoke();
+        $loginController->__invoke(new Request());
     }
 
     public function testExceptionHandlerIsCalledWhenRequestUserInfoThrowsAnException(): void
     {
         $mockClient = Mockery::mock(OpenIDConnectClient::class);
+        $mockClient
+            ->shouldReceive('setLoginHint')
+            ->once();
         $mockClient->shouldReceive('authenticate')->once();
         $mockClient
             ->shouldReceive('requestUserInfo')
@@ -114,12 +123,15 @@ class LoginControllerTest extends TestCase
             $mockExceptionHandler,
         );
 
-        $loginController->__invoke();
+        $loginController->__invoke(new Request());
     }
 
     public function testExceptionHandlerIsCalledWhenRequestUserInfoThrowsAnJweDecryptException(): void
     {
         $mockClient = Mockery::mock(OpenIDConnectClient::class);
+        $mockClient
+            ->shouldReceive('setLoginHint')
+            ->once();
         $mockClient->shouldReceive('authenticate')->once();
         $mockClient
             ->shouldReceive('requestUserInfo')
@@ -139,12 +151,15 @@ class LoginControllerTest extends TestCase
             $mockExceptionHandler,
         );
 
-        $loginController->__invoke();
+        $loginController->__invoke(new Request());
     }
 
     public function testLoginResponseIsReturnedWithUserInfo(): void
     {
         $mockClient = Mockery::mock(OpenIDConnectClient::class);
+        $mockClient
+            ->shouldReceive('setLoginHint')
+            ->once();
         $mockClient->shouldReceive('authenticate')->once();
         $mockClient
             ->shouldReceive('requestUserInfo')
@@ -158,7 +173,7 @@ class LoginControllerTest extends TestCase
             $mockExceptionHandler,
         );
 
-        $response = $loginController->__invoke();
+        $response = $loginController->__invoke(new Request());
 
         $this->assertInstanceOf(LoginResponseInterface::class, $response);
         $this->assertInstanceOf(Responsable::class, $response);
@@ -167,6 +182,9 @@ class LoginControllerTest extends TestCase
     public function testUserInfoIsReturned(): void
     {
         $mockClient = Mockery::mock(OpenIDConnectClient::class);
+        $mockClient
+            ->shouldReceive('setLoginHint')
+            ->once();
         $mockClient->shouldReceive('authenticate')->once();
         $mockClient
             ->shouldReceive('requestUserInfo')
@@ -180,7 +198,7 @@ class LoginControllerTest extends TestCase
             $mockExceptionHandler,
         );
 
-        $loginResponse = $loginController->__invoke();
+        $loginResponse = $loginController->__invoke(new Request());
         $response = $loginResponse->toResponse(Mockery::mock(Request::class));
 
         $this->assertSame(json_encode([

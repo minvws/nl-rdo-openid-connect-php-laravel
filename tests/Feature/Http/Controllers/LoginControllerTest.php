@@ -35,10 +35,26 @@ class LoginControllerTest extends TestCase
             ->assertRedirectContains("https://provider.rdobeheer.nl/authorize")
             ->assertRedirectContains('test-client-id');
     }
+    public function testLoginRouteRedirectsToAuthorizeUrlOfProviderWithLoginHint(): void
+    {
+        $this->mockOpenIDConfigurationLoader();
+
+        config()->set('oidc.client_id', 'test-client-id');
+
+        $response = $this->get(route('oidc.login', ['login_hint' => 'test-login-hint']));
+        $response
+            ->assertStatus(302)
+            ->assertRedirectContains("https://provider.rdobeheer.nl/authorize")
+            ->assertRedirectContains('test-client-id')
+            ->assertRedirectContains('login_hint=test-login-hint');
+    }
 
     public function testLoginRouteReturnsUserInfoWitchMockedClient(): void
     {
         $mockClient = Mockery::mock(OpenIDConnectClient::class);
+        $mockClient
+            ->shouldReceive('setLoginHint')
+            ->once();
         $mockClient
             ->shouldReceive('authenticate')
             ->once();
