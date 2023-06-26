@@ -53,10 +53,26 @@ return [
      * Route configuration
      */
     'route_configuration' => [
+        /**
+         * Enable or disable the login route.
+         */
+        'enabled' => env('OIDC_LOGIN_ROUTE_ENABLED', true),
+
+        /**
+         * The url of the login route.
+         */
         'login_route' => env('OIDC_LOGIN_ROUTE', '/oidc/login'),
+
+        /**
+         * The middleware that runs on the login route.
+         */
         'middleware' => [
             'web'
         ],
+
+        /**
+         * The prefix of the login route.
+         */
         'prefix' => '',
     ]
 ];
