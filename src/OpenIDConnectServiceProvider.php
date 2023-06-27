@@ -42,6 +42,10 @@ class OpenIDConnectServiceProvider extends ServiceProvider
 
     protected function registerRoutes(): void
     {
+        if (!$this->routesEnabled()) {
+            return;
+        }
+
         Route::group($this->routeConfiguration(), function () {
             $this->loadRoutesFrom(__DIR__ . '/../routes/oidc.php');
         });
@@ -58,6 +62,21 @@ class OpenIDConnectServiceProvider extends ServiceProvider
             'prefix' => config('oidc.route_configuration.prefix'),
             'middleware' => config('oidc.route_configuration.middleware'),
         ];
+    }
+
+    /**
+     * Check in config if the routes are enabled.
+     *
+     * @return bool
+     */
+    protected function routesEnabled(): bool
+    {
+        $enabled = config('oidc.route_configuration.enabled');
+        if (!is_bool($enabled)) {
+            return false;
+        }
+
+        return $enabled;
     }
 
     protected function registerConfigurationLoader(): void
