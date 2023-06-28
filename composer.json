@@ -1,8 +1,14 @@
 {
-    "name": "minvws/nl-rdo-openid-connect-php-laravel",
+    "name": "minvws/openid-connect-php-laravel",
     "description": "OpenID Connect client for Laravel",
     "type": "library",
     "license": "EUPL-1.2",
+    "authors": [
+        {
+            "name": "Rick Lambrechts",
+            "email": "rick@rl-webdiensten.nl"
+        }
+    ],
     "autoload": {
         "psr-4": {
             "MinVWS\\OpenIDConnectLaravel\\": "src/"
