@@ -5,22 +5,24 @@ declare(strict_types=1);
 namespace MinVWS\OpenIDConnectLaravel\Http\Controllers;
 
 use Exception;
-use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
 use Jumbojett\OpenIDConnectClientException;
-use MinVWS\OpenIDConnectLaravel\Http\Responses\LoginResponseInterface;
+use MinVWS\OpenIDConnectLaravel\Http\Responses\LoginResponseHandlerInterface;
 use MinVWS\OpenIDConnectLaravel\OpenIDConnectClient;
-use MinVWS\OpenIDConnectLaravel\Services\OpenIDConnectExceptionHandlerInterface;
+use MinVWS\OpenIDConnectLaravel\Services\ExceptionHandlerInterface;
+use Symfony\Component\HttpFoundation\Response;
 
 class LoginController extends Controller
 {
     public function __construct(
         protected OpenIDConnectClient $client,
-        protected OpenIDConnectExceptionHandlerInterface $exceptionHandler,
+        protected ExceptionHandlerInterface $exceptionHandler,
+        protected LoginResponseHandlerInterface $responseHandler,
     ) {
     }
 
-    public function __invoke(Request $request): Responsable
+    public function __invoke(Request $request): Response
     {
         // This redirects to the client and handles the redirect back
         try {
@@ -42,8 +44,8 @@ class LoginController extends Controller
             return $this->exceptionHandler->handleException($e);
         }
 
-        // Return the user information in a response
-        return app(LoginResponseInterface::class, ['userInfo' => $userInfo]);
+        // Return the user information to response handler
+        return $this->responseHandler->handleLoginResponse($userInfo);
     }
 
     /**
