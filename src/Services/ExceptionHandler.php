@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace MinVWS\OpenIDConnectLaravel\Services;
 
 use Exception;
-use Illuminate\Contracts\Support\Responsable;
 use Jumbojett\OpenIDConnectClientException;
+use Symfony\Component\HttpFoundation\Response;
 
-class OpenIDConnectExceptionHandler implements OpenIDConnectExceptionHandlerInterface
+class ExceptionHandler implements ExceptionHandlerInterface
 {
-    public function handleExceptionWhileAuthenticate(OpenIDConnectClientException $exception): Responsable
+    public function handleExceptionWhileAuthenticate(OpenIDConnectClientException $exception): Response
     {
         if (str_starts_with($exception->getMessage(), 'Error: ')) {
             return $this->handleRequestError($exception);
@@ -26,14 +26,14 @@ class OpenIDConnectExceptionHandler implements OpenIDConnectExceptionHandlerInte
     /**
      * Called when request to userinfo endpoint fails, jwt signature is invalid, or userinfo is not an object.
      * @param OpenIDConnectClientException $exception
-     * @return Responsable
+     * @return Response
      */
-    public function handleExceptionWhileRequestUserInfo(OpenIDConnectClientException $exception): Responsable
+    public function handleExceptionWhileRequestUserInfo(OpenIDConnectClientException $exception): Response
     {
         return $this->defaultResponse($exception);
     }
 
-    public function handleException(Exception $exception): Responsable
+    public function handleException(Exception $exception): Response
     {
         return $this->defaultResponseGenericException($exception);
     }
@@ -42,9 +42,9 @@ class OpenIDConnectExceptionHandler implements OpenIDConnectExceptionHandlerInte
      * Called when url contains query parameter error.
      * For example user is sent back from idp with error=login_cancelled.
      * @param OpenIDConnectClientException $exception
-     * @return Responsable
+     * @return Response
      */
-    protected function handleRequestError(OpenIDConnectClientException $exception): Responsable
+    protected function handleRequestError(OpenIDConnectClientException $exception): Response
     {
         return $this->default400Response($exception);
     }
@@ -52,24 +52,24 @@ class OpenIDConnectExceptionHandler implements OpenIDConnectExceptionHandlerInte
     /**
      * Called when url contains query parameter code and state, and state does not match with the value from session.
      * @param OpenIDConnectClientException $exception
-     * @return Responsable
+     * @return Response
      */
-    protected function handleUnableToDetermineState(OpenIDConnectClientException $exception): Responsable
+    protected function handleUnableToDetermineState(OpenIDConnectClientException $exception): Response
     {
         return $this->default400Response($exception);
     }
 
-    protected function defaultResponse(OpenIDConnectClientException $exception): Responsable
+    protected function defaultResponse(OpenIDConnectClientException $exception): Response
     {
         abort(500, $exception->getMessage());
     }
 
-    protected function defaultResponseGenericException(Exception $exception): Responsable
+    protected function defaultResponseGenericException(Exception $exception): Response
     {
         abort(500, $exception->getMessage());
     }
 
-    protected function default400Response(OpenIDConnectClientException $exception): Responsable
+    protected function default400Response(OpenIDConnectClientException $exception): Response
     {
         abort(400, $exception->getMessage());
     }

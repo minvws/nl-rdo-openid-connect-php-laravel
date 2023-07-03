@@ -5,44 +5,30 @@ declare(strict_types=1);
 namespace MinVWS\OpenIDConnectLaravel\Tests\Unit\Http\Controllers;
 
 use Exception;
-use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\Request;
 use Jumbojett\OpenIDConnectClientException;
 use MinVWS\OpenIDConnectLaravel\Http\Controllers\LoginController;
-use MinVWS\OpenIDConnectLaravel\Http\Responses\LoginResponse;
-use MinVWS\OpenIDConnectLaravel\Http\Responses\LoginResponseInterface;
+use MinVWS\OpenIDConnectLaravel\Http\Responses\LoginResponseHandler;
+use MinVWS\OpenIDConnectLaravel\Http\Responses\LoginResponseHandlerInterface;
 use MinVWS\OpenIDConnectLaravel\OpenIDConnectClient;
+use MinVWS\OpenIDConnectLaravel\Services\ExceptionHandlerInterface;
 use MinVWS\OpenIDConnectLaravel\Services\JWE\JweDecryptException;
-use MinVWS\OpenIDConnectLaravel\Services\OpenIDConnectExceptionHandler;
+use MinVWS\OpenIDConnectLaravel\Services\ExceptionHandler;
 use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
 class LoginControllerTest extends TestCase
 {
     use MockeryPHPUnitIntegration;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        // Bind the LoginResponseInterface to the LoginResponse class
-        app()->bind(LoginResponseInterface::class, LoginResponse::class);
-    }
-
-    protected function tearDown(): void
-    {
-        // Flush so the LoginResponseInterface binding is removed
-        app()->flush();
-
-        parent::tearDown();
-    }
-
     public function testLoginControllerCanBeCreated(): void
     {
         $loginController = new LoginController(
             new OpenIDConnectClient(),
-            new OpenIDConnectExceptionHandler(),
+            new ExceptionHandler(),
+            new LoginResponseHandler(),
         );
         $this->assertInstanceOf(LoginController::class, $loginController);
     }
@@ -57,14 +43,18 @@ class LoginControllerTest extends TestCase
             ->shouldReceive('authenticate')
             ->andThrow(OpenIDConnectClientException::class);
 
-        $mockExceptionHandler = Mockery::mock(OpenIDConnectExceptionHandler::class);
+        $mockExceptionHandler = Mockery::mock(ExceptionHandlerInterface::class);
         $mockExceptionHandler
             ->shouldReceive('handleExceptionWhileAuthenticate')
             ->once();
 
+        $mockLoginResponseHandler = Mockery::mock(LoginResponseHandlerInterface::class);
+        $mockLoginResponseHandler->shouldNotHaveBeenCalled();
+
         $loginController = new LoginController(
             $mockClient,
             $mockExceptionHandler,
+            $mockLoginResponseHandler,
         );
 
         $loginController->__invoke(new Request());
@@ -82,7 +72,7 @@ class LoginControllerTest extends TestCase
             ->andReturn('not an object')
             ->once();
 
-        $mockExceptionHandler = Mockery::mock(OpenIDConnectExceptionHandler::class);
+        $mockExceptionHandler = Mockery::mock(ExceptionHandlerInterface::class);
         $mockExceptionHandler
             ->shouldReceive('handleExceptionWhileRequestUserInfo')
             ->withArgs(function (OpenIDConnectClientException $e) {
@@ -90,9 +80,13 @@ class LoginControllerTest extends TestCase
             })
             ->once();
 
+        $mockLoginResponseHandler = Mockery::mock(LoginResponseHandlerInterface::class);
+        $mockLoginResponseHandler->shouldNotHaveBeenCalled();
+
         $loginController = new LoginController(
             $mockClient,
             $mockExceptionHandler,
+            $mockLoginResponseHandler,
         );
 
         $loginController->__invoke(new Request());
@@ -110,7 +104,7 @@ class LoginControllerTest extends TestCase
             ->andThrow(OpenIDConnectClientException::class, 'Something went wrong')
             ->once();
 
-        $mockExceptionHandler = Mockery::mock(OpenIDConnectExceptionHandler::class);
+        $mockExceptionHandler = Mockery::mock(ExceptionHandlerInterface::class);
         $mockExceptionHandler
             ->shouldReceive('handleExceptionWhileRequestUserInfo')
             ->withArgs(function (OpenIDConnectClientException $e) {
@@ -118,9 +112,13 @@ class LoginControllerTest extends TestCase
             })
             ->once();
 
+        $mockLoginResponseHandler = Mockery::mock(LoginResponseHandlerInterface::class);
+        $mockLoginResponseHandler->shouldNotHaveBeenCalled();
+
         $loginController = new LoginController(
             $mockClient,
             $mockExceptionHandler,
+            $mockLoginResponseHandler,
         );
 
         $loginController->__invoke(new Request());
@@ -138,7 +136,7 @@ class LoginControllerTest extends TestCase
             ->andThrow(JweDecryptException::class, 'Something went wrong')
             ->once();
 
-        $mockExceptionHandler = Mockery::mock(OpenIDConnectExceptionHandler::class);
+        $mockExceptionHandler = Mockery::mock(ExceptionHandlerInterface::class);
         $mockExceptionHandler
             ->shouldReceive('handleException')
             ->withArgs(function (Exception $e) {
@@ -146,16 +144,22 @@ class LoginControllerTest extends TestCase
             })
             ->once();
 
+        $mockLoginResponseHandler = Mockery::mock(LoginResponseHandlerInterface::class);
+        $mockLoginResponseHandler->shouldNotHaveBeenCalled();
+
         $loginController = new LoginController(
             $mockClient,
             $mockExceptionHandler,
+            $mockLoginResponseHandler,
         );
 
         $loginController->__invoke(new Request());
     }
 
-    public function testLoginResponseIsReturnedWithUserInfo(): void
+    public function testResponseIsReturned(): void
     {
+        $userInfo = $this->exampleUserInfo();
+
         $mockClient = Mockery::mock(OpenIDConnectClient::class);
         $mockClient
             ->shouldReceive('setLoginHint')
@@ -163,46 +167,32 @@ class LoginControllerTest extends TestCase
         $mockClient->shouldReceive('authenticate')->once();
         $mockClient
             ->shouldReceive('requestUserInfo')
-            ->andReturn($this->exampleUserInfo())
+            ->andReturn($userInfo)
             ->once();
 
-        $mockExceptionHandler = Mockery::mock(OpenIDConnectExceptionHandler::class);
+        $mockExceptionHandler = Mockery::mock(ExceptionHandlerInterface::class);
+        $mockExceptionHandler->shouldNotHaveBeenCalled();
+
+        $mockLoginResponseHandler = Mockery::mock(LoginResponseHandlerInterface::class);
+        $mockLoginResponseHandler
+            ->shouldReceive('handleLoginResponse')
+            ->withArgs([$userInfo])
+            ->once()
+            ->andReturn(new JsonResponse([
+                'userInfo' => $userInfo,
+            ]));
 
         $loginController = new LoginController(
             $mockClient,
             $mockExceptionHandler,
+            $mockLoginResponseHandler,
         );
 
         $response = $loginController->__invoke(new Request());
 
-        $this->assertInstanceOf(LoginResponseInterface::class, $response);
-        $this->assertInstanceOf(Responsable::class, $response);
-    }
-
-    public function testUserInfoIsReturned(): void
-    {
-        $mockClient = Mockery::mock(OpenIDConnectClient::class);
-        $mockClient
-            ->shouldReceive('setLoginHint')
-            ->once();
-        $mockClient->shouldReceive('authenticate')->once();
-        $mockClient
-            ->shouldReceive('requestUserInfo')
-            ->andReturn($this->exampleUserInfo())
-            ->once();
-
-        $mockExceptionHandler = Mockery::mock(OpenIDConnectExceptionHandler::class);
-
-        $loginController = new LoginController(
-            $mockClient,
-            $mockExceptionHandler,
-        );
-
-        $loginResponse = $loginController->__invoke(new Request());
-        $response = $loginResponse->toResponse(Mockery::mock(Request::class));
-
+        $this->assertInstanceOf(JsonResponse::class, $response);
         $this->assertSame(json_encode([
-            'userInfo' => $this->exampleUserInfo(),
+            'userInfo' => $userInfo,
         ]), $response->getContent());
     }
 

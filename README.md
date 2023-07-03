@@ -60,17 +60,17 @@ The package provides a pre-configured login route for OpenID Connect authenticat
 To enable or disable the login route, you can update the `OIDC_LOGIN_ROUTE_ENABLED` variable in your environment configuration. Set it to true to enable the login route or false to disable it.
 To change the URL of the login route, you can update the `OIDC_LOGIN_ROUTE` variable in your environment configuration. The default value is `/oidc/login`.
 
-### Customizing Login Response
-The package includes a default LoginResponse class that returns a JSON response containing user information. However, you have the flexibility to customize the login response according to your project's needs.
+### Customizing Login Response Handler
+The package includes a default LoginResponseHandler class that returns a JSON response containing user information. However, you have the flexibility to customize the login response according to your project's needs.
 
-To bind your own implementation of the LoginResponseInterface, you can use the following code in your Laravel application:
+To bind your own implementation of the LoginResponseHandlerInterface, you can use the following code in your Laravel application:
 ```php
-$this->app->bind(LoginResponseInterface::class, YourCustomLoginResponse::class);
+$this->app->bind(LoginResponseHandlerInterface::class, YourCustomLoginResponse::class);
 ```
 
 Replace `YourCustomLoginResponse` with the class name of your custom implementation. By binding your own response class, you can define the desired behavior and format of the login response.
 
-Make sure to implement the `LoginResponseInterface` in your custom response class to ensure compatibility.
+Make sure to implement the `LoginResponseHandlerInterface` in your custom response handler class to ensure compatibility.
 
 ## Contributing
 If you encounter any issues or have suggestions for improvements, please feel free to open an issue or submit a pull request on the GitHub repository of this package.

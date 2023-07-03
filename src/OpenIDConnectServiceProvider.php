@@ -8,13 +8,13 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Jose\Component\KeyManagement\JWKFactory;
-use MinVWS\OpenIDConnectLaravel\Http\Responses\LoginResponse;
-use MinVWS\OpenIDConnectLaravel\Http\Responses\LoginResponseInterface;
+use MinVWS\OpenIDConnectLaravel\Http\Responses\LoginResponseHandler;
+use MinVWS\OpenIDConnectLaravel\Http\Responses\LoginResponseHandlerInterface;
 use MinVWS\OpenIDConnectLaravel\OpenIDConfiguration\OpenIDConfigurationLoader;
 use MinVWS\OpenIDConnectLaravel\Services\JWE\JweDecryptInterface;
 use MinVWS\OpenIDConnectLaravel\Services\JWE\JweDecryptService;
-use MinVWS\OpenIDConnectLaravel\Services\OpenIDConnectExceptionHandler;
-use MinVWS\OpenIDConnectLaravel\Services\OpenIDConnectExceptionHandlerInterface;
+use MinVWS\OpenIDConnectLaravel\Services\ExceptionHandler;
+use MinVWS\OpenIDConnectLaravel\Services\ExceptionHandlerInterface;
 
 class OpenIDConnectServiceProvider extends ServiceProvider
 {
@@ -26,7 +26,7 @@ class OpenIDConnectServiceProvider extends ServiceProvider
         $this->registerConfigurationLoader();
         $this->registerClient();
         $this->registerExceptionHandler();
-        $this->registerResponses();
+        $this->registerResponseHandler();
     }
 
     public function boot(): void
@@ -130,10 +130,10 @@ class OpenIDConnectServiceProvider extends ServiceProvider
 
     protected function registerExceptionHandler(): void
     {
-        $this->app->bind(OpenIDConnectExceptionHandlerInterface::class, OpenIDConnectExceptionHandler::class);
+        $this->app->bind(ExceptionHandlerInterface::class, ExceptionHandler::class);
     }
-    protected function registerResponses(): void
+    protected function registerResponseHandler(): void
     {
-        $this->app->bind(LoginResponseInterface::class, LoginResponse::class);
+        $this->app->bind(LoginResponseHandlerInterface::class, LoginResponseHandler::class);
     }
 }
