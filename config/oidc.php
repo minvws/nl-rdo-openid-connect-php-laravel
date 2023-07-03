@@ -74,5 +74,12 @@ return [
          * The prefix of the login route.
          */
         'prefix' => '',
-    ]
+    ],
+
+    /**
+     * TLS Verify
+     * Can be disabled for local development.
+     * Is used in OpenIDConfigurationLoader and in the ServiceProvider for OpenIDConnectClient.
+     */
+    'tls_verify' => env('OIDC_TLS_VERIFY', true),
 ];
