@@ -72,6 +72,9 @@ Replace `YourCustomLoginResponse` with the class name of your custom implementat
 
 Make sure to implement the `LoginResponseHandlerInterface` in your custom response handler class to ensure compatibility.
 
+### Disable TLS Certificate Verification
+By default, the package verifies the TLS certificate when making requests to the issuer. If you want to disable TLS certificate verification, you can set the `OIDC_TLS_VERIFY` variable to false in your environment configuration.
+
 ## Contributing
 If you encounter any issues or have suggestions for improvements, please feel free to open an issue or submit a pull request on the GitHub repository of this package.
 
