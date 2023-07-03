@@ -16,6 +16,7 @@ jobs:
                 php: [ 8.1, 8.2 ]
                 laravel: [ 8.*, 9.*, 10.* ]
                 stability: [ prefer-stable ]
+                experimental: [ false ]
                 include:
                   - laravel: 8.*
                     testbench: 6.*
@@ -23,9 +24,11 @@ jobs:
                     testbench: 7.*
                   - laravel: 10.*
                     testbench: 8.*
-                exclude:
-                  - laravel: 10.*
-                    php: 8.0
+                  - php: 8.3
+                    laravel: 10.*
+                    testbench: 8.*
+                    stability: prefer-stable
+                    experimental: true
 
         name: PHP ${{ matrix.php }} - L${{ matrix.laravel }}
         steps:
@@ -38,9 +41,16 @@ jobs:
                   php-version: ${{ matrix.php }}
 
             - name: Install dependencies
+              if: "${{ matrix.experimental == false }}"
               run: |
                   composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update --dev
                   composer update --${{ matrix.stability }} --prefer-dist --no-interaction
+
+            - name: Install dependencies (experimental)
+              if: "${{ matrix.experimental == true }}"
+              run: |
+                  composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update --dev --ignore-platform-reqs
+                  composer update --${{ matrix.stability }} --prefer-dist --no-interaction --ignore-platform-reqs
 
             - name: Setup problem matchers for PHP
               run: echo "::add-matcher::${{ runner.tool_cache }}/php.json"
@@ -55,6 +65,7 @@ jobs:
               run: vendor/bin/phpstan analyse
 
             - name: Static analysis with Psalm
+              if: "${{ matrix.experimental == false }}"
               run: vendor/bin/psalm
 
             - name: Coding style PSR12 Check
