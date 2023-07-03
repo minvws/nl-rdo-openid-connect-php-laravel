@@ -25,6 +25,9 @@ jobs:
                   - laravel: 10.*
                     testbench: 8.*
                   - php: 8.3
+                    laravel: 10.*
+                    testbench: 8.*
+                    stability: prefer-stable
                     experimental: true
 
         name: PHP ${{ matrix.php }} - L${{ matrix.laravel }}
@@ -43,7 +46,7 @@ jobs:
                   composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update --dev
                   composer update --${{ matrix.stability }} --prefer-dist --no-interaction
 
-            - name: Install dependencies
+            - name: Install dependencies (experimental)
               if: "${{ matrix.experimental == true }}"
               run: |
                   composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update --dev --ignore-platform-reqs
@@ -59,7 +62,6 @@ jobs:
               run: vendor/bin/phpunit
 
             - name: Static analysis with PHPStan
-              if: "${{ matrix.experimental == false }}"
               run: vendor/bin/phpstan analyse
 
             - name: Static analysis with Psalm
@@ -67,5 +69,4 @@ jobs:
               run: vendor/bin/psalm
 
             - name: Coding style PSR12 Check
-              if: "${{ matrix.experimental == false }}"
               run: vendor/bin/phpcs

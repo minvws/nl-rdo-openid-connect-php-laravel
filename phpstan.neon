@@ -4,3 +4,5 @@ parameters:
     level: 8
     excludePaths:
         - src/BaseOpenIDConnectClient.php
+includes:
+    - phar://phpstan.phar/conf/bleedingEdge.neon
