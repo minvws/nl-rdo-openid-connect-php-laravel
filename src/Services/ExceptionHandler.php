@@ -5,11 +5,18 @@ declare(strict_types=1);
 namespace MinVWS\OpenIDConnectLaravel\Services;
 
 use Exception;
+use Illuminate\Http\Request;
 use Jumbojett\OpenIDConnectClientException;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\Response;
 
 class ExceptionHandler implements ExceptionHandlerInterface
 {
+    public function __construct(
+        protected ?LoggerInterface $logger = null,
+    ) {
+    }
+
     public function handleExceptionWhileAuthenticate(OpenIDConnectClientException $exception): Response
     {
         if (str_starts_with($exception->getMessage(), 'Error: ')) {
@@ -20,6 +27,9 @@ class ExceptionHandler implements ExceptionHandlerInterface
             return $this->handleUnableToDetermineState($exception);
         }
 
+        $this->logger?->error('OIDC Exception occurred while authenticating', [
+            'exception' => $exception,
+        ]);
         return $this->defaultResponse($exception);
     }
 
@@ -30,11 +40,19 @@ class ExceptionHandler implements ExceptionHandlerInterface
      */
     public function handleExceptionWhileRequestUserInfo(OpenIDConnectClientException $exception): Response
     {
+        $this->logger?->error('OIDC Exception occurred while requesting user info', [
+            'exception' => $exception,
+        ]);
+
         return $this->defaultResponse($exception);
     }
 
     public function handleException(Exception $exception): Response
     {
+        $this->logger?->error('OIDC Generic exception occurred', [
+            'exception' => $exception,
+        ]);
+
         return $this->defaultResponseGenericException($exception);
     }
 
@@ -46,6 +64,11 @@ class ExceptionHandler implements ExceptionHandlerInterface
      */
     protected function handleRequestError(OpenIDConnectClientException $exception): Response
     {
+        $this->logger?->debug('OIDC Request error', [
+            'exception' => $exception,
+            'query' => $this->getRequest()?->query->all(),
+        ]);
+
         return $this->default400Response($exception);
     }
 
@@ -56,6 +79,10 @@ class ExceptionHandler implements ExceptionHandlerInterface
      */
     protected function handleUnableToDetermineState(OpenIDConnectClientException $exception): Response
     {
+        $this->logger?->debug('OIDC State in url does not match with session', [
+            'exception' => $exception,
+        ]);
+
         return $this->default400Response($exception);
     }
 
@@ -72,5 +99,15 @@ class ExceptionHandler implements ExceptionHandlerInterface
     protected function default400Response(OpenIDConnectClientException $exception): Response
     {
         abort(400, $exception->getMessage());
+    }
+
+    protected function getRequest(): ?Request
+    {
+        $request = request();
+        if (!($request instanceof Request)) {
+            return null;
+        }
+
+        return $request;
     }
 }
