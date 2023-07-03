@@ -170,12 +170,13 @@ class LoginControllerTest extends TestCase
             ->andReturn($userInfo)
             ->once();
 
-        $mockExceptionHandler = Mockery::mock(ExceptionHandler::class);
+        $mockExceptionHandler = Mockery::mock(ExceptionHandlerInterface::class);
         $mockExceptionHandler->shouldNotHaveBeenCalled();
 
         $mockLoginResponseHandler = Mockery::mock(LoginResponseHandlerInterface::class);
         $mockLoginResponseHandler
             ->shouldReceive('handleLoginResponse')
+            ->withArgs([$userInfo])
             ->once()
             ->andReturn(new JsonResponse([
                 'userInfo' => $userInfo,
