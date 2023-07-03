@@ -13,6 +13,7 @@ class OpenIDConfigurationLoader
         protected string $issuer,
         protected ?Repository $cacheStore = null,
         protected int $cacheTtl = 3600,
+        protected bool $tlsVerify = true,
     ) {
     }
 
@@ -37,7 +38,12 @@ class OpenIDConfigurationLoader
     {
         $url = $this->getOpenIDConfigurationUrl();
 
-        $response = Http::get($url);
+        $pendingRequest = Http::baseUrl($url);
+        if (!$this->tlsVerify) {
+            $pendingRequest->withoutVerifying();
+        }
+        $response = $pendingRequest->get($url);
+
         if (!$response->successful()) {
             throw new OpenIDConfigurationLoaderException(
                 message: 'Could not load OpenID configuration from issuer',
