@@ -14,12 +14,8 @@ use MinVWS\OpenIDConnectLaravel\Services\JWE\JweDecryptInterface;
 
 /**
  * OpenID Connect Client for Laravel
- *
- * This class is currently extending a copied OpenIDConnectClient class from
- * this PR https://github.com/jumbojett/OpenID-Connect-PHP/pull/376 because
- * we need the changes now. It is intended to remove the copied class when the PR is merged.
  */
-class OpenIDConnectClient extends BaseOpenIDConnectClient
+class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
 {
     protected ?JweDecryptInterface $jweDecrypter;
     protected ?OpenIDConfiguration $openIDConfiguration;
