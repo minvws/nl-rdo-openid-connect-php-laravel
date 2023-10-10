@@ -21,6 +21,8 @@ return [
     /**
      * Only needed when response of user info endpoint is encrypted.
      * This is the path to the JWE decryption key.
+     *
+     * You could add multiple decryption key paths comma separated.
      */
     'decryption_key_path' => env('OIDC_DECRYPTION_KEY_PATH', ''),
 
