@@ -43,8 +43,9 @@ class JweDecryptServiceTest extends TestCase
         [$key, $keyResource] = $this->generateOpenSSLKey();
         $this->decryptionKeyResource = $keyResource;
 
-        $jwk = JWKFactory::createFromKeyFile(stream_get_meta_data($keyResource)['uri']);
-        $this->decryptionKeySet = new JWKSet([$jwk]);
+        $this->decryptionKeySet = new JWKSet([
+            $this->getJwkFromResource($keyResource),
+        ]);
 
         $this->x509Certificate = $this->generateX509Certificate($key);
     }
@@ -95,7 +96,7 @@ class JweDecryptServiceTest extends TestCase
 
         // Create different key
         [$key, $keyResource] = $this->generateOpenSSLKey();
-        $jwk = JWKFactory::createFromKeyFile(stream_get_meta_data($keyResource)['uri']);
+        $jwk = $this->getJwkFromResource($keyResource);
         $decryptionKeySet = new JWKSet([$jwk]);
 
         // Build JWE for default certificate
@@ -143,6 +144,46 @@ class JweDecryptServiceTest extends TestCase
         );
 
         $decryptService->decrypt('something');
+    }
+
+    /**
+     * @throws JweDecryptException
+     * @throws JsonException
+     */
+    public function testJweDecryptionWithMultipleKeysInKeySet(): void
+    {
+        [$firstRecipientKey, $firstRecipientKeyResource] = $this->generateOpenSSLKey();
+        $firstRecipient = $this->generateX509Certificate($firstRecipientKey);
+
+        [$secondRecipientKey, $secondRecipientKeyResource] = $this->generateOpenSSLKey();
+        $secondRecipient = $this->generateX509Certificate($secondRecipientKey);
+
+        $payload = $this->buildExamplePayload();
+
+        $firstJwe = $this->buildJweString(
+            payload: $payload,
+            recipient: JWKFactory::createFromX509Resource($firstRecipient)
+        );
+        $secondJwe = $this->buildJweString(
+            payload: $payload,
+            recipient: JWKFactory::createFromX509Resource($secondRecipient)
+        );
+
+        $jweDecryptService = new JweDecryptService(new JWKSet([
+            $this->getJwkFromResource($firstRecipientKeyResource),
+            $this->getJwkFromResource($secondRecipientKeyResource),
+        ]));
+
+        // Check if first jwe can be decrypted with key set
+        $decryptedPayload = $jweDecryptService->decrypt($firstJwe);
+        $this->assertEquals($payload, $decryptedPayload);
+
+        // Check if second jwe can be decrypted with key set
+        $decryptedPayload = $jweDecryptService->decrypt($secondJwe);
+        $this->assertEquals($payload, $decryptedPayload);
+
+        fclose($firstRecipientKeyResource);
+        fclose($secondRecipientKeyResource);
     }
 
     protected function buildJweString(string $payload, JWK $recipient): string
@@ -227,5 +268,19 @@ class JweDecryptServiceTest extends TestCase
         }
 
         return $certificate;
+    }
+
+    /**
+     * Get JWK from resource
+     * @param $resource resource
+     * @return JWK
+     */
+    protected function getJwkFromResource($resource): JWK
+    {
+        if (!is_resource($resource)) {
+            throw new RuntimeException('Could not create temporary file');
+        }
+
+        return JWKFactory::createFromKeyFile(stream_get_meta_data($resource)['uri']);
     }
 }
