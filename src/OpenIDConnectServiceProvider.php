@@ -7,6 +7,7 @@ namespace MinVWS\OpenIDConnectLaravel;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Jose\Component\Core\JWKSet;
 use Jose\Component\KeyManagement\JWKFactory;
 use MinVWS\OpenIDConnectLaravel\Http\Responses\LoginResponseHandler;
 use MinVWS\OpenIDConnectLaravel\Http\Responses\LoginResponseHandlerInterface;
@@ -121,16 +122,13 @@ class OpenIDConnectServiceProvider extends ServiceProvider
 
     protected function registerJweDecryptInterface(): void
     {
-        if (empty(config('oidc.decryption_key_path'))) {
-            $this->app->singleton(JweDecryptInterface::class, function () {
+        $this->app->singleton(JweDecryptInterface::class, function () {
+            $decryptionKeySet = $this->parseDecryptionKeySet();
+            if ($decryptionKeySet === null) {
                 return null;
-            });
-            return;
-        }
+            }
 
-        $this->app->singleton(JweDecryptInterface::class, function (Application $app) {
-            $jwk = JWKFactory::createFromKeyFile($app['config']->get('oidc.decryption_key_path'));
-            return new JweDecryptService(decryptionKey: $jwk);
+            return new JweDecryptService(decryptionKeySet: $decryptionKeySet);
         });
     }
 
@@ -141,5 +139,26 @@ class OpenIDConnectServiceProvider extends ServiceProvider
     protected function registerResponseHandler(): void
     {
         $this->app->bind(LoginResponseHandlerInterface::class, LoginResponseHandler::class);
+    }
+
+    /**
+     * Parse decryption keys from config
+     * @return ?JWKSet
+     */
+    protected function parseDecryptionKeySet(): ?JWKSet
+    {
+        $value = config('oidc.decryption_key_path');
+        if (empty($value)) {
+            return null;
+        }
+
+        $keys = [];
+
+        $paths = explode(',', $value);
+        foreach ($paths as $path) {
+            $keys[] = JWKFactory::createFromKeyFile($path);
+        }
+
+        return new JWKSet($keys);
     }
 }
