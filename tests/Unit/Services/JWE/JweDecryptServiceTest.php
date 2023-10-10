@@ -6,6 +6,7 @@ namespace MinVWS\OpenIDConnectLaravel\Tests\Unit\Services\JWE;
 
 use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Core\JWK;
+use Jose\Component\Core\JWKSet;
 use Jose\Component\Encryption\Algorithm\ContentEncryption\A128CBCHS256;
 use Jose\Component\Encryption\Algorithm\KeyEncryption\RSAOAEP;
 use Jose\Component\Encryption\Compression\CompressionMethodManager;
@@ -32,7 +33,7 @@ class JweDecryptServiceTest extends TestCase
      * @var resource
      */
     protected $decryptionKeyResource;
-    protected JWK $decryptionKey;
+    protected JWKSet $decryptionKeySet;
     protected OpenSSLCertificate $x509Certificate;
 
     protected function setUp(): void
@@ -41,7 +42,10 @@ class JweDecryptServiceTest extends TestCase
 
         [$key, $keyResource] = $this->generateOpenSSLKey();
         $this->decryptionKeyResource = $keyResource;
-        $this->decryptionKey = JWKFactory::createFromKeyFile(stream_get_meta_data($keyResource)['uri']);
+
+        $jwk = JWKFactory::createFromKeyFile(stream_get_meta_data($keyResource)['uri']);
+        $this->decryptionKeySet = new JWKSet([$jwk]);
+
         $this->x509Certificate = $this->generateX509Certificate($key);
     }
 
@@ -56,7 +60,7 @@ class JweDecryptServiceTest extends TestCase
 
     public function testServiceCanBeCreated(): void
     {
-        $jweDecryptService = new JweDecryptService($this->decryptionKey);
+        $jweDecryptService = new JweDecryptService($this->decryptionKeySet);
 
         $this->assertInstanceOf(JweDecryptService::class, $jweDecryptService);
     }
@@ -74,7 +78,7 @@ class JweDecryptServiceTest extends TestCase
             recipient: JWKFactory::createFromX509Resource($this->x509Certificate)
         );
 
-        $jweDecryptService = new JweDecryptService($this->decryptionKey);
+        $jweDecryptService = new JweDecryptService($this->decryptionKeySet);
         $decryptedPayload = $jweDecryptService->decrypt($jwe);
 
         $this->assertEquals($payload, $decryptedPayload);
@@ -92,6 +96,7 @@ class JweDecryptServiceTest extends TestCase
         // Create different key
         [$key, $keyResource] = $this->generateOpenSSLKey();
         $jwk = JWKFactory::createFromKeyFile(stream_get_meta_data($keyResource)['uri']);
+        $decryptionKeySet = new JWKSet([$jwk]);
 
         // Build JWE for default certificate
         $payload = $this->buildExamplePayload();
@@ -101,7 +106,7 @@ class JweDecryptServiceTest extends TestCase
         );
 
         // Try to decrypt with different key
-        $jweDecryptService = new JweDecryptService($jwk);
+        $jweDecryptService = new JweDecryptService($decryptionKeySet);
         $jweDecryptService->decrypt($jwe);
     }
 
@@ -119,7 +124,7 @@ class JweDecryptServiceTest extends TestCase
             ->shouldReceive('getPayload')
             ->andReturn(null);
 
-        $decryptionKey = Mockery::mock(JWK::class);
+        $decryptionKeySet = Mockery::mock(JWKSet::class);
         $serializerManager = Mockery::mock(JWESerializerManager::class);
         $serializerManager
             ->shouldReceive('unserialize')
@@ -128,11 +133,11 @@ class JweDecryptServiceTest extends TestCase
 
         $jweDecrypter = Mockery::mock(JWEDecrypter::class);
         $jweDecrypter
-            ->shouldReceive('decryptUsingKey')
+            ->shouldReceive('decryptUsingKeySet')
             ->andReturn(true);
 
         $decryptService = new JweDecryptService(
-            $decryptionKey,
+            $decryptionKeySet,
             $serializerManager,
             $jweDecrypter,
         );
