@@ -13,19 +13,27 @@ use Mockery;
 
 class LoginControllerResponseTest extends TestCase
 {
+    /**
+     * Prevent HTTP requests from being made during tests.
+     * If any HTTP requests are made during tests, an exception will be thrown.
+     * This is to prevent HTTP requests from being made to the OpenID Connect provider.
+     *
+     * To test on Laravel 8 we need to check if the method exists.
+     */
     public function setUp(): void
     {
         parent::setUp();
 
-        // Support for running tests with Laravel 8
         if (method_exists(Http::class, 'preventStrayRequests')) {
             Http::preventStrayRequests();
         }
     }
 
+    /**
+     * Reset $_REQUEST after each test for getRoute function.
+     */
     protected function tearDown(): void
     {
-        // Reset $_REQUEST after each test for getRoute function
         $_REQUEST = [];
 
         parent::tearDown();
