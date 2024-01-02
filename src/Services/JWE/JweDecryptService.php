@@ -33,7 +33,6 @@ class JweDecryptService implements JweDecryptInterface
     }
 
     /**
-     * phpcs:enable
      * @throws JweDecryptException
      */
     public function decrypt(string $jweString): string
