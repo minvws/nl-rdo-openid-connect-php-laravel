@@ -7,6 +7,7 @@
 
     <rule ref="PSR12" />
 
+    <config name="installed_paths" value="vendor/slevomat/coding-standard"/>
     <rule ref="SlevomatCodingStandard.Namespaces.UnusedUses">
         <properties>
             <property name="searchAnnotations" type="boolean" value="true"/>
@@ -15,7 +16,7 @@
 
     <rule ref="SlevomatCodingStandard.TypeHints.DeclareStrictTypes">
         <properties>
-            <property name="newlinesCountBetweenOpenTagAndDeclare" type="int" value="2" />
+            <property name="linesCountBeforeDeclare" type="int" value="1"/>
             <property name="spacesCountAroundEqualsSign" type="int" value="0" />
         </properties>
     </rule>
