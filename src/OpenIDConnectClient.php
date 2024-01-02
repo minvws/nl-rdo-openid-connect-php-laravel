@@ -14,16 +14,11 @@ use MinVWS\OpenIDConnectLaravel\Services\JWE\JweDecryptInterface;
 
 /**
  * OpenID Connect Client for Laravel
- *
- * This class is currently extending a copied OpenIDConnectClient class from
- * this PR https://github.com/jumbojett/OpenID-Connect-PHP/pull/376 because
- * we need the changes now. It is intended to remove the copied class when the PR is merged.
  */
-class OpenIDConnectClient extends BaseOpenIDConnectClient
+class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
 {
     protected ?JweDecryptInterface $jweDecrypter;
     protected ?OpenIDConfiguration $openIDConfiguration;
-    protected ?string $loginHint = null;
 
     public function __construct(
         ?string $providerUrl = null,
@@ -126,12 +121,11 @@ class OpenIDConnectClient extends BaseOpenIDConnectClient
      */
     public function setLoginHint(?string $loginHint = null): void
     {
-        $this->loginHint = $loginHint;
+        $this->addAuthParam(['login_hint' => $loginHint]);
     }
 
     /**
      * Overwrite the redirect method to a redirect method of Laravel.
-     * And add login_hint when redirecting to the authorization endpoint.
      * Sometimes the error 'Cannot modify header information - headers already sent' was thrown.
      * By using HttpResponseException, laravel will return the given response.
      * @param string $url
@@ -140,14 +134,6 @@ class OpenIDConnectClient extends BaseOpenIDConnectClient
      */
     public function redirect($url): void
     {
-        $authorizationEndpoint = $this->getAuthorizationEndpoint();
-        if (
-            !empty($this->loginHint)
-            && str_starts_with($url, $authorizationEndpoint)
-        ) {
-            $url .= "&" . http_build_query(['login_hint' => $this->loginHint]);
-        }
-
         throw new HttpResponseException(new RedirectResponse($url));
     }
 

@@ -33,8 +33,43 @@ class LoginControllerTest extends TestCase
         $response
             ->assertStatus(302)
             ->assertRedirectContains("https://provider.rdobeheer.nl/authorize")
-            ->assertRedirectContains('test-client-id');
+            ->assertRedirectContains('response_type=code')
+            ->assertRedirectContains('redirect_uri=http%3A%2F%2Flocalhost%2Foidc%2Flogin')
+            ->assertRedirectContains('client_id=test-client-id')
+            ->assertRedirectContains('scope=openid')
+            ->assertRedirectContains('code_challenge_method=S256');
     }
+
+    /**
+     * @dataProvider scopesProvider
+     */
+    public function testLoginRouteRedirectsToAuthorizeUrlOfProviderWithScopes(
+        array $additionalScopes,
+        string $scopeInUrl
+    ): void {
+        $this->mockOpenIDConfigurationLoader();
+
+        config()->set('oidc.client_id', 'test-client-id');
+        config()->set('oidc.additional_scopes', $additionalScopes);
+
+        $response = $this->get(route('oidc.login', ['login_hint' => 'test-login-hint']));
+        $response
+            ->assertStatus(302)
+            ->assertRedirectContains("https://provider.rdobeheer.nl/authorize")
+            ->assertRedirectContains('test-client-id')
+            ->assertRedirectContains('login_hint=test-login-hint')
+            ->assertRedirectContains($scopeInUrl);
+    }
+
+    public static function scopesProvider(): array
+    {
+        return [
+            'no scopes' => [[], 'scope=openid'],
+            'one scope' => [['test-scope-1'], 'scope=test-scope-1+openid'],
+            'multiple scopes' => [['test-scope-1', 'test-scope-2'], 'scope=test-scope-1+test-scope-2+openid'],
+        ];
+    }
+
     public function testLoginRouteRedirectsToAuthorizeUrlOfProviderWithLoginHint(): void
     {
         $this->mockOpenIDConfigurationLoader();

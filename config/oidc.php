@@ -21,13 +21,15 @@ return [
     /**
      * Only needed when response of user info endpoint is encrypted.
      * This is the path to the JWE decryption key.
+     *
+     * You could add multiple decryption key paths comma separated.
      */
     'decryption_key_path' => env('OIDC_DECRYPTION_KEY_PATH', ''),
 
     /**
      * By default, the openid scope is requested. If you need additional scopes, you can specify them here.
      */
-    'additional_scopes' => explode(',', env('OIDC_ADDITIONAL_SCOPES', '')),
+    'additional_scopes' => array_filter(explode(',', env('OIDC_ADDITIONAL_SCOPES', ''))),
 
     /**
      * Code Challenge Method used for PKCE.
