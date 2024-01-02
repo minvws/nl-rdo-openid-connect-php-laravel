@@ -95,7 +95,6 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
      * @param string|string[]|bool|null $default optional
      * @throws OpenIDConnectClientException
      * @return string|string[]|bool
-     * @psalm-suppress ImplementedReturnTypeMismatch
      */
     protected function getWellKnownConfigValue($param, $default = null): string|array|bool
     {
