@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Http\Controllers;
 
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;
 use MinVWS\OpenIDConnectLaravel\OpenIDConfiguration\OpenIDConfiguration;
@@ -27,6 +28,8 @@ class LoginControllerResponseTest extends TestCase
         if (method_exists(Http::class, 'preventStrayRequests')) {
             Http::preventStrayRequests();
         }
+
+        Config::set('oidc.client_id', 'test-client-id');
     }
 
     /**
@@ -43,26 +46,91 @@ class LoginControllerResponseTest extends TestCase
     {
         $this->mockOpenIDConfigurationLoader();
 
-        config()->set('oidc.client_id', 'test-client-id');
-
         $response = $this->getRoute('oidc.login', ['error' => 'test-error']);
 
         $response
             ->assertStatus(400);
     }
 
+    public function testNonceAndStateAreSetInCache(): void
+    {
+        $this->mockOpenIDConfigurationLoader();
 
-    protected function mockOpenIDConfigurationLoader(): void
+        // Check if nonce and state are not set in cache.
+        $this->assertNull(session('openid_connect_nonce'));
+        $this->assertNull(session('openid_connect_state'));
+
+        // Make request to login route.
+        $response = $this->getRoute('oidc.login');
+
+        // Now the nonce and state should be set and should be in the url
+        $nonce = session('openid_connect_nonce');
+        $state = session('openid_connect_state');
+
+        $response
+            ->assertStatus(302)
+            ->assertRedirectContains("https://provider.rdobeheer.nl/authorize")
+            ->assertRedirectContains('response_type=code')
+            ->assertRedirectContains('redirect_uri=http%3A%2F%2Flocalhost%2Foidc%2Flogin')
+            ->assertRedirectContains('client_id=test-client-id')
+            ->assertRedirectContains('nonce=' . $nonce)
+            ->assertRedirectContains('state=' . $state)
+            ->assertRedirectContains('client_id=test-client-id');
+    }
+
+    /**
+     * @dataProvider codeChallengeMethodProvider
+     */
+    public function testCodeChallengeIsSetWhenSupported(
+        ?string $requestedCodeChallengeMethod,
+        array $codeChallengesSupportedAtProvider,
+        bool $codeChallengeShouldBeSet,
+    ): void {
+        $this->mockOpenIDConfigurationLoader($codeChallengesSupportedAtProvider);
+        Config::set('oidc.code_challenge_method', $requestedCodeChallengeMethod);
+
+        // Check if code verified is not set in cache.
+        $this->assertNull(session('openid_connect_code_verifier'));
+
+        // Make request to login route.
+        $response = $this->getRoute('oidc.login');
+
+        $response
+            ->assertStatus(302)
+            ->assertRedirectContains("https://provider.rdobeheer.nl/authorize");
+
+        if ($codeChallengeShouldBeSet) {
+            $response
+                ->assertRedirectContains('code_challenge_method=' . $requestedCodeChallengeMethod)
+                ->assertRedirectContains('code_challenge=')
+                ->assertSessionHas('openid_connect_code_verifier');
+        } else {
+            $response
+                ->assertSessionMissing('openid_connect_code_verifier');
+        }
+    }
+
+    public function codeChallengeMethodProvider(): array
+    {
+        return [
+            'no code challenge method requested' => [null, [], false],
+            'code challenge method requested but not supported' => ['S256', [], false],
+            'code challenge method requested and supported' => ['S256', ['S256'], true],
+            'code challenge method requested and supported plain' => ['plain', ['plain'], true],
+        ];
+    }
+
+    protected function mockOpenIDConfigurationLoader(array $codeChallengeMethodsSupported = []): void
     {
         $mock = Mockery::mock(OpenIDConfigurationLoader::class);
         $mock
             ->shouldReceive('getConfiguration')
-            ->andReturn($this->exampleOpenIDConfiguration());
+            ->andReturn($this->exampleOpenIDConfiguration($codeChallengeMethodsSupported));
 
         $this->app->instance(OpenIDConfigurationLoader::class, $mock);
     }
 
-    protected function exampleOpenIDConfiguration(): OpenIDConfiguration
+    protected function exampleOpenIDConfiguration(array $codeChallengeMethodsSupported = []): OpenIDConfiguration
     {
         return new OpenIDConfiguration(
             version: "3.0",
@@ -86,7 +154,7 @@ class LoginControllerResponseTest extends TestCase
             subjectTypesSupported: ["pairwise"],
             idTokenSigningAlgValuesSupported: ["RS256"],
             userinfoEndpoint: "https://provider.rdobeheer.nl/userinfo",
-            codeChallengeMethodsSupported: ["S256"],
+            codeChallengeMethodsSupported: $codeChallengeMethodsSupported,
         );
     }
 

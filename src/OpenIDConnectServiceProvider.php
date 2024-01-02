@@ -104,7 +104,9 @@ class OpenIDConnectServiceProvider extends ServiceProvider
             if (!empty($app['config']->get('oidc.client_secret'))) {
                 $oidc->setClientSecret($app['config']->get('oidc.client_secret'));
             }
-            $oidc->setCodeChallengeMethod($app['config']->get('oidc.code_challenge_method'));
+            if (!empty($app['config']->get('oidc.code_challenge_method'))) {
+                $oidc->setCodeChallengeMethod($app['config']->get('oidc.code_challenge_method'));
+            }
             $oidc->setRedirectURL($app['url']->route('oidc.login'));
 
             $additionalScopes = $app['config']->get('oidc.additional_scopes');
