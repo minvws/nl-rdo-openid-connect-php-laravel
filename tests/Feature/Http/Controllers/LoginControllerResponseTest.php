@@ -83,13 +83,16 @@ class LoginControllerResponseTest extends TestCase
     }
 
     /**
+     * Override the Laravel GET request to put the query parameters in $_REQUEST.
+     * This is to test the functionality because the tests in Laravel only sets
+     * $_POST and $_GET and OpenIDConnectClient uses $_REQUEST.
+     *
      * @param string $routeName
      * @param array<string, string> $queryParams
      * @return TestResponse
      */
     protected function getRoute(string $routeName, array $queryParams = []): TestResponse
     {
-        // Stupid fix for OpenIDConnectClient. It uses $_REQUEST instead of $_GET.
         $_REQUEST = [];
         foreach ($queryParams as $key => $value) {
             $_REQUEST[$key] = $value;
