@@ -6,6 +6,7 @@ namespace Http\Controllers;
 
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Testing\TestResponse;
 use MinVWS\OpenIDConnectLaravel\OpenIDConfiguration\OpenIDConfiguration;
 use MinVWS\OpenIDConnectLaravel\OpenIDConfiguration\OpenIDConfigurationLoader;
@@ -118,6 +119,33 @@ class LoginControllerResponseTest extends TestCase
             'code challenge method requested and supported' => ['S256', ['S256'], true],
             'code challenge method requested and supported plain' => ['plain', ['plain'], true],
         ];
+    }
+
+    public function testRequestTokens(): void
+    {
+        Http::fake([
+            'https://provider.rdobeheer.nl/token' => Http::response([
+                'access_token' => 'some-access-token',
+                'id_token' => 'some-id-token', // TODO: Generate JWT
+                'token_type' => 'Bearer',
+                'expires_in' => 3600,
+            ]),
+        ]);
+
+        $this->mockOpenIDConfigurationLoader();
+
+        Session::put('openid_connect_state', 'some-state');
+
+        $response = $this->getRoute('oidc.login', ['code' => 'some-code', 'state' => 'some-state']);
+
+        $this->markTestIncomplete('TODO: Generate JWT for id_token testing');
+
+        $response->assertStatus(200);
+
+        $this->assertEmpty(session('openid_connect_state'));
+        $this->assertEmpty(session('openid_connect_nonce'));
+
+        Http::assertSentCount(1);
     }
 
     protected function mockOpenIDConfigurationLoader(array $codeChallengeMethodsSupported = []): void
