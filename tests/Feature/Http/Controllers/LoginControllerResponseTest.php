@@ -12,6 +12,7 @@ use MinVWS\OpenIDConnectLaravel\OpenIDConfiguration\OpenIDConfiguration;
 use MinVWS\OpenIDConnectLaravel\OpenIDConfiguration\OpenIDConfigurationLoader;
 use MinVWS\OpenIDConnectLaravel\Tests\TestCase;
 use Mockery;
+use function MinVWS\OpenIDConnectLaravel\Tests\generateJwt;
 
 class LoginControllerResponseTest extends TestCase
 {
@@ -123,10 +124,24 @@ class LoginControllerResponseTest extends TestCase
 
     public function testRequestTokens(): void
     {
+        $idToken = generateJwt([
+            "iss" => "https://provider.rdobeheer.nl",
+//                    "sub" => "34ac4890f75fa885cbee1244c6ed524bff434a8f117c8311ef8b54cf11cb86e3",
+//                    "aud" => [
+//                        "c466f2fc-7ba7-4942-813e-6133f5b6be55"
+//                    ],
+//  "iat" => 1704234273,
+//  "exp" => 1704235173,
+//  "at_hash": "lxGcvAxY6wEBOrMcqcm3yQ",
+//  "nonce": "46a93e77deb26cfdf0566f0bd81b9f80"
+        ], 'a-signing-key');
+
+//        dump($idToken);
+
         Http::fake([
             'https://provider.rdobeheer.nl/token' => Http::response([
                 'access_token' => 'some-access-token',
-                'id_token' => 'some-id-token', // TODO: Generate JWT
+                'id_token' => $idToken, // TODO: Generate JWT
                 'token_type' => 'Bearer',
                 'expires_in' => 3600,
             ]),
@@ -138,6 +153,7 @@ class LoginControllerResponseTest extends TestCase
 
         $response = $this->getRoute('oidc.login', ['code' => 'some-code', 'state' => 'some-state']);
 
+//        dd($response);
         $this->markTestIncomplete('TODO: Generate JWT for id_token testing');
 
         $response->assertStatus(200);

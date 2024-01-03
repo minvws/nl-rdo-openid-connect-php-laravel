@@ -167,6 +167,9 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
     }
 
     /**
+     * Override the fetchURL method to use Laravel HTTP client.
+     * This uses Guzzle in the background.
+     *
      * @param string $url
      * @param string | null $post_body string If this is set the post type will be POST
      * @param array<array-key, mixed> $headers Extra headers to be sent with the request.
@@ -178,10 +181,10 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
         $pendingRequest = Http::withUserAgent($this->getUserAgent())
             ->timeout($this->timeOut)
             ->withOptions([
+                // TODO: Refactor verify
                 'verify' => $this->getCertPath() ?: $this->getVerifyPeer()
             ]);
 
-        // If we set some headers include them
         if (count($headers) > 0) {
             $pendingRequest->withHeaders($headers);
         }
