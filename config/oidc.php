@@ -9,12 +9,14 @@ return [
     'issuer' => env('OIDC_ISSUER', ''),
 
     /**
-     * The client ID of the OpenID Connect provider.
+     * The unique identifier assigned to your application
+     * by the OpenID Connect provider.
      */
     'client_id' => env('OIDC_CLIENT_ID', ''),
 
     /**
-     * If needed, the client secret of the OpenID Connect provider.
+     * If needed, the client secret that you received
+     * from the OpenID Connect provider.
      */
     'client_secret' => env('OIDC_CLIENT_SECRET', ''),
 
