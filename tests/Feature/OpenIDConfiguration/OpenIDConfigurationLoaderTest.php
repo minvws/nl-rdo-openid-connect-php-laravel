@@ -226,7 +226,7 @@ class OpenIDConfigurationLoaderTest extends TestCase
     protected function fakeSuccessfulResponse(): void
     {
         Http::fake([
-            'https://provider.rdobeheer.nl/*' => Http::response([
+            'https://provider.rdobeheer.nl/.well-known/openid-configuration' => Http::response([
                 "version" => "3.0",
                 "token_endpoint_auth_methods_supported" => [
                     "none"
