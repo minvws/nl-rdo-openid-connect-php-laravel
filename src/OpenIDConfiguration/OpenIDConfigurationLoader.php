@@ -38,11 +38,11 @@ class OpenIDConfigurationLoader
     {
         $url = $this->getOpenIDConfigurationUrl();
 
-        $pendingRequest = Http::baseUrl($url);
-        if (!$this->tlsVerify) {
-            $pendingRequest->withoutVerifying();
-        }
-        $response = $pendingRequest->get($url);
+        $response = Http::baseUrl($this->issuer)
+            ->when(!$this->tlsVerify, function ($pendingRequest) {
+                return $pendingRequest->withoutVerifying();
+            })
+            ->get($url);
 
         if (!$response->successful()) {
             throw new OpenIDConfigurationLoaderException(
@@ -97,6 +97,6 @@ class OpenIDConfigurationLoader
 
     protected function getOpenIDConfigurationUrl(): string
     {
-        return $this->issuer . '/.well-known/openid-configuration';
+        return '/.well-known/openid-configuration';
     }
 }
