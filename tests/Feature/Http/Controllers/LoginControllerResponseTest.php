@@ -145,13 +145,18 @@ class LoginControllerResponseTest extends TestCase
             ]),
         ]);
 
+        // Set OIDC config
         $this->mockOpenIDConfigurationLoader();
 
         Config::set('oidc.issuer', 'https://provider.rdobeheer.nl');
         Config::set('oidc.client_id', 'test-client-id');
         Config::set('oidc.client_secret', 'the-secret-client-secret');
+
+        // Set current state, normally this is generated before logging in and send
+        // to the issuer, when the user is redirected for login.
         Session::put('openid_connect_state', 'some-state');
 
+        // We simulate here that the user now comes back after successful login at issuer.
         $response = $this->getRoute('oidc.login', ['code' => 'some-code', 'state' => 'some-state']);
         $response->assertStatus(200);
         $response->assertJson([
