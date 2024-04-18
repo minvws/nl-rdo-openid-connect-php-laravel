@@ -118,7 +118,7 @@ class OpenIDConfigurationLoaderTest extends TestCase
 
             $context = $exception->context();
             $this->assertSame("https://provider.rdobeheer.nl", $context['issuer']);
-            $this->assertSame("https://provider.rdobeheer.nl/.well-known/openid-configuration", $context['url']);
+            $this->assertSame("/.well-known/openid-configuration", $context['url']);
             $this->assertSame(400, $context['response_status_code']);
         }
     }
@@ -137,7 +137,7 @@ class OpenIDConfigurationLoaderTest extends TestCase
 
             $context = $exception->context();
             $this->assertSame("https://provider.rdobeheer.nl", $context['issuer']);
-            $this->assertSame("https://provider.rdobeheer.nl/.well-known/openid-configuration", $context['url']);
+            $this->assertSame("/.well-known/openid-configuration", $context['url']);
             $this->assertSame(500, $context['response_status_code']);
         }
     }
@@ -156,7 +156,7 @@ class OpenIDConfigurationLoaderTest extends TestCase
 
             $context = $exception->context();
             $this->assertSame("https://provider.rdobeheer.nl", $context['issuer']);
-            $this->assertSame("https://provider.rdobeheer.nl/.well-known/openid-configuration", $context['url']);
+            $this->assertSame("/.well-known/openid-configuration", $context['url']);
             $this->assertSame(200, $context['response_status_code']);
             $this->assertSame('', $context['response_body']);
         }
@@ -176,7 +176,7 @@ class OpenIDConfigurationLoaderTest extends TestCase
 
             $context = $exception->context();
             $this->assertSame("https://provider.rdobeheer.nl", $context['issuer']);
-            $this->assertSame("https://provider.rdobeheer.nl/.well-known/openid-configuration", $context['url']);
+            $this->assertSame("/.well-known/openid-configuration", $context['url']);
             $this->assertSame(200, $context['response_status_code']);
             $this->assertSame('some invalid response', $context['response_body']);
         }
@@ -226,7 +226,7 @@ class OpenIDConfigurationLoaderTest extends TestCase
     protected function fakeSuccessfulResponse(): void
     {
         Http::fake([
-            'https://provider.rdobeheer.nl/*' => Http::response([
+            'https://provider.rdobeheer.nl/.well-known/openid-configuration' => Http::response([
                 "version" => "3.0",
                 "token_endpoint_auth_methods_supported" => [
                     "none"
