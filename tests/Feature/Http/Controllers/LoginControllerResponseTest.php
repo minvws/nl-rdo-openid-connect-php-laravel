@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MinVWS\OpenIDConnectLaravel\Tests\Feature\Http\Controllers;
 
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Session;
@@ -133,7 +134,7 @@ class LoginControllerResponseTest extends TestCase
         Http::fake([
             // Token requested by OpenIDConnectClient::authenticate() function.
             'https://provider.rdobeheer.nl/token' => Http::response([
-                'access_token' => 'some-access-token',
+                'access_token' => 'access-token-from-token-endpoint',
                 'id_token' => $idToken,
                 'token_type' => 'Bearer',
                 'expires_in' => 3600,
@@ -165,8 +166,40 @@ class LoginControllerResponseTest extends TestCase
         Http::assertSentCount(2);
         Http::assertSentInOrder([
             'https://provider.rdobeheer.nl/token',
-            'https://provider.rdobeheer.nl/userinfo?schema=openid'
+            'https://provider.rdobeheer.nl/userinfo?schema=openid',
         ]);
+        Http::assertSent(function (Request $request) {
+            if ($request->url() === 'https://provider.rdobeheer.nl/token') {
+                $this->assertSame(
+                    expected: 'POST',
+                    actual: $request->method(),
+                );
+                $this->assertSame(
+                    expected: 'grant_type=authorization_code'
+                    . '&code=some-code'
+                    . '&redirect_uri=http%3A%2F%2Flocalhost%2Foidc%2Flogin'
+                    . '&client_id=test-client-id'
+                    . '&client_secret=the-secret-client-secret',
+                    actual: $request->body(),
+                );
+                return true;
+            }
+
+            if ($request->url() === 'https://provider.rdobeheer.nl/userinfo?schema=openid') {
+                $this->assertSame(
+                    expected: 'GET',
+                    actual: $request->method(),
+                );
+                $this->assertSame(
+                    expected: [
+                        'Bearer access-token-from-token-endpoint'
+                    ],
+                    actual: $request->header('Authorization'),
+                );
+            }
+
+            return true;
+        });
     }
 
     protected function mockOpenIDConfigurationLoader(array $codeChallengeMethodsSupported = []): void
