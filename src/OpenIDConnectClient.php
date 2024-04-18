@@ -186,7 +186,7 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
             ]);
 
         if (count($headers) > 0) {
-            $pendingRequest->withHeaders($headers);
+            $pendingRequest->withHeaders($this->reformatHeaders($headers));
         }
 
         if ($post_body === null) {
@@ -229,5 +229,23 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
     public function getResponseContentType(): ?string
     {
         return $this->responseContentType;
+    }
+
+    /**
+     * Reformat the headers from string to array for Guzzle.
+     *
+     * @param array<string> $headers
+     * @return array<string, array<int, string>>
+     */
+    protected function reformatHeaders(array $headers): array
+    {
+        $result = [];
+
+        foreach ($headers as $header) {
+            [$key, $value] = explode(": ", $header, 2);
+            $result[$key] = [$value];
+        }
+
+        return $result;
     }
 }
