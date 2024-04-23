@@ -181,7 +181,6 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
         $pendingRequest = Http::withUserAgent($this->getUserAgent())
             ->timeout($this->timeOut)
             ->withOptions([
-                // TODO: Refactor verify
                 'verify' => $this->getCertPath() ?: $this->getVerifyPeer()
             ]);
 
@@ -229,6 +228,17 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
     public function getResponseContentType(): ?string
     {
         return $this->responseContentType;
+    }
+
+    public function setTlsVerify(bool|string $tlsVerify): void
+    {
+        $verify = (bool)$tlsVerify;
+        $this->setVerifyHost($verify);
+        $this->setVerifyPeer($verify);
+
+        if (is_string($tlsVerify)) {
+            $this->setCertPath($tlsVerify);
+        }
     }
 
     /**

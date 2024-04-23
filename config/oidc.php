@@ -81,9 +81,13 @@ return [
     ],
 
     /**
-     * TLS Verify
-     * Can be disabled for local development.
-     * Is used in OpenIDConfigurationLoader and in the ServiceProvider for OpenIDConnectClient.
+     * TLS Verify - Used as the verify option for Guzzle.
+     *
+     * Default is true and verifies the certificate and uses the default CA bundle of the system.
+     * When set to `false` it disables the certificate verification (this is insecure!).
+     * When set to a path of a CA bundle, the custom certificate is used.
+     *
+     * @link https://docs.guzzlephp.org/en/latest/request-options.html#verify
      */
     'tls_verify' => env('OIDC_TLS_VERIFY', true),
 ];

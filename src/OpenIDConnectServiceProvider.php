@@ -87,7 +87,7 @@ class OpenIDConnectServiceProvider extends ServiceProvider
                 $app['config']->get('oidc.issuer'),
                 $app['cache']->store($app['config']->get('oidc.configuration_cache.store')),
                 $app['config']->get('oidc.configuration_cache.ttl'),
-                $app['config']->get('oidc.tls_verify') === true,
+                $app['config']->get('oidc.tls_verify'),
             );
         });
     }
@@ -114,10 +114,7 @@ class OpenIDConnectServiceProvider extends ServiceProvider
                 $oidc->addScope($additionalScopes);
             }
 
-            if ($app['config']->get('oidc.tls_verify') !== true) {
-                $oidc->setVerifyHost(false);
-                $oidc->setVerifyPeer(false);
-            }
+            $oidc->setTlsVerify($app['config']->get('oidc.tls_verify'));
             return $oidc;
         });
     }

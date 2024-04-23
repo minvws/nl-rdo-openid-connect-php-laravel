@@ -13,7 +13,7 @@ class OpenIDConfigurationLoader
         protected string $issuer,
         protected ?Repository $cacheStore = null,
         protected int $cacheTtl = 3600,
-        protected bool $tlsVerify = true,
+        protected bool|string $tlsVerify = true,
     ) {
     }
 
@@ -39,9 +39,9 @@ class OpenIDConfigurationLoader
         $url = $this->getOpenIDConfigurationUrl();
 
         $response = Http::baseUrl($this->issuer)
-            ->when(!$this->tlsVerify, function ($pendingRequest) {
-                return $pendingRequest->withoutVerifying();
-            })
+            ->withOptions([
+                'verify' => $this->tlsVerify
+            ])
             ->get($url);
 
         if (!$response->successful()) {
