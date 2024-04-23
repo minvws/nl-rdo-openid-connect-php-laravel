@@ -33,10 +33,7 @@
         "php": ">=8.1",
         "jumbojett/openid-connect-php": "^1.0.0",
         "guzzlehttp/guzzle": "^7.5",
-        "web-token/jwt-encryption": "^3.1",
-        "web-token/jwt-key-mgmt": "^3.1",
-        "web-token/jwt-encryption-algorithm-aescbc": "^3.1",
-        "web-token/jwt-encryption-algorithm-rsa": "^3.1"
+        "web-token/jwt-library": "^3.4"
     },
     "require-dev": {
         "orchestra/testbench": "^6.0|^7.0|^8.0",
