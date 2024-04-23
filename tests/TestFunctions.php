@@ -116,3 +116,21 @@ function getJwkFromResource($resource): JWK
 
     return JWKFactory::createFromKeyFile(stream_get_meta_data($resource)['uri']);
 }
+
+function generateJwt(array $payload, string $signingKey): string
+{
+    $header = json_encode(['typ' => 'JWT', 'alg' => 'HS256']);
+    $payload = json_encode($payload);
+
+    $base64UrlHeader = base64UrlEncode($header);
+    $base64UrlPayload = base64UrlEncode($payload);
+
+    $signature = hash_hmac('sha256', $base64UrlHeader . "." . $base64UrlPayload, $signingKey, true);
+
+    return $base64UrlHeader . "." . $base64UrlPayload . "." . base64UrlEncode($signature);
+}
+
+function base64UrlEncode(string $data): string
+{
+    return str_replace(['+', '/', '='], ['-', '_', ''], base64_encode($data));
+}

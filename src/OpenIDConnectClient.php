@@ -6,6 +6,7 @@ namespace MinVWS\OpenIDConnectLaravel;
 
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use Jumbojett\OpenIDConnectClientException;
@@ -19,6 +20,15 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
 {
     protected ?JweDecryptInterface $jweDecrypter;
     protected ?OpenIDConfiguration $openIDConfiguration;
+    /**
+     * @var int|null Response code from the server
+     */
+    protected ?int $responseCode;
+
+    /**
+     * @var string|null Content type from the server
+     */
+    private ?string $responseContentType;
 
     public function __construct(
         ?string $providerUrl = null,
@@ -95,7 +105,6 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
      * @param string|string[]|bool|null $default optional
      * @throws OpenIDConnectClientException
      * @return string|string[]|bool
-     * @psalm-suppress ImplementedReturnTypeMismatch
      */
     protected function getWellKnownConfigValue($param, $default = null): string|array|bool
     {
@@ -155,5 +164,98 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
         }
 
         return $authorizationEndpoint;
+    }
+
+    /**
+     * Override the fetchURL method to use Laravel HTTP client.
+     * This uses Guzzle in the background.
+     *
+     * @param string $url
+     * @param string | null $post_body string If this is set the post type will be POST
+     * @param array<array-key, mixed> $headers Extra headers to be sent with the request.
+     * @return string
+     * @throws OpenIDConnectClientException
+     */
+    protected function fetchURL(string $url, string $post_body = null, array $headers = []): string
+    {
+        $pendingRequest = Http::withUserAgent($this->getUserAgent())
+            ->timeout($this->timeOut)
+            ->withOptions([
+                'verify' => $this->getCertPath() ?: $this->getVerifyPeer()
+            ]);
+
+        if (count($headers) > 0) {
+            $pendingRequest->withHeaders($this->reformatHeaders($headers));
+        }
+
+        if ($post_body === null) {
+            $request = $pendingRequest->get($url);
+        } else {
+            $isJson = is_object(json_decode($post_body, false));
+
+            $request = $pendingRequest
+                ->withBody($post_body, $isJson ? 'application/json' : 'application/x-www-form-urlencoded')
+                ->post($url);
+        }
+
+        $this->responseCode = $request->status();
+        $this->responseContentType = $request->header('Content-Type');
+
+        if ($request->failed()) {
+            throw new OpenIDConnectClientException(
+                'Request failed with status code ' . $this->responseCode . ' ' . $request->reason()
+            );
+        }
+
+        return $request->body();
+    }
+
+    /**
+     * Get the response code from last action/curl request.
+     *
+     * @return int
+     */
+    public function getResponseCode(): int
+    {
+        return $this->responseCode ?? 0;
+    }
+
+    /**
+     * Get the content type from last action/curl request.
+     *
+     * @return string|null
+     */
+    public function getResponseContentType(): ?string
+    {
+        return $this->responseContentType;
+    }
+
+    public function setTlsVerify(bool|string $tlsVerify): void
+    {
+        $verify = (bool)$tlsVerify;
+        $this->setVerifyHost($verify);
+        $this->setVerifyPeer($verify);
+
+        if (is_string($tlsVerify)) {
+            $this->setCertPath($tlsVerify);
+        }
+    }
+
+    /**
+     * Reformat the headers from string to array for Guzzle.
+     *
+     * @param array<string> $headers
+     * @return array<string, array<int, string>>
+     */
+    protected function reformatHeaders(array $headers): array
+    {
+        $result = [];
+
+        foreach ($headers as $header) {
+            [$key, $value] = explode(": ", $header, 2);
+            $result[$key] = [$value];
+        }
+
+        return $result;
     }
 }

@@ -87,7 +87,7 @@ class OpenIDConnectServiceProvider extends ServiceProvider
                 $app['config']->get('oidc.issuer'),
                 $app['cache']->store($app['config']->get('oidc.configuration_cache.store')),
                 $app['config']->get('oidc.configuration_cache.ttl'),
-                $app['config']->get('oidc.tls_verify') === true,
+                $app['config']->get('oidc.tls_verify'),
             );
         });
     }
@@ -104,7 +104,9 @@ class OpenIDConnectServiceProvider extends ServiceProvider
             if (!empty($app['config']->get('oidc.client_secret'))) {
                 $oidc->setClientSecret($app['config']->get('oidc.client_secret'));
             }
-            $oidc->setCodeChallengeMethod($app['config']->get('oidc.code_challenge_method'));
+            if (!empty($app['config']->get('oidc.code_challenge_method'))) {
+                $oidc->setCodeChallengeMethod($app['config']->get('oidc.code_challenge_method'));
+            }
             $oidc->setRedirectURL($app['url']->route('oidc.login'));
 
             $additionalScopes = $app['config']->get('oidc.additional_scopes');
@@ -112,10 +114,7 @@ class OpenIDConnectServiceProvider extends ServiceProvider
                 $oidc->addScope($additionalScopes);
             }
 
-            if ($app['config']->get('oidc.tls_verify') !== true) {
-                $oidc->setVerifyHost(false);
-                $oidc->setVerifyPeer(false);
-            }
+            $oidc->setTlsVerify($app['config']->get('oidc.tls_verify'));
             return $oidc;
         });
     }
