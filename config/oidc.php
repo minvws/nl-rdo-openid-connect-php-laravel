@@ -21,6 +21,24 @@ return [
     'client_secret' => env('OIDC_CLIENT_SECRET', ''),
 
     /**
+     * Configuration for the token authentication.
+     */
+    'client_authentication' => [
+
+        /**
+         * When you want to use `private_key_jwt` client authentication then you can specify the path to the private key.
+         */
+        'signing_private_key_path' => env('OIDC_SIGNING_PRIVATE_KEY_PATH', ''),
+
+        /**
+         * When you want to use `private_key_jwt` client authentication then you can specify the signing algorithm.
+         * For a list of supported algorithms see https://tools.ietf.org/html/rfc7518#section-3.1
+         */
+        'signing_algorithm' => env('OIDC_SIGNING_ALGORITHM', 'RS256'),
+        
+    ],
+
+    /**
      * Only needed when response of user info endpoint is encrypted.
      * This is the path to the JWE decryption key.
      *
