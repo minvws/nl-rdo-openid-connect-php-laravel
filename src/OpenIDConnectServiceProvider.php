@@ -7,8 +7,11 @@ namespace MinVWS\OpenIDConnectLaravel;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Core\JWKSet;
 use Jose\Component\KeyManagement\JWKFactory;
+use Jose\Component\Signature\JWSBuilder;
+use Jose\Component\Signature\Serializer\CompactSerializer;
 use MinVWS\OpenIDConnectLaravel\Http\Responses\LoginResponseHandler;
 use MinVWS\OpenIDConnectLaravel\Http\Responses\LoginResponseHandlerInterface;
 use MinVWS\OpenIDConnectLaravel\OpenIDConfiguration\OpenIDConfigurationLoader;
@@ -16,6 +19,7 @@ use MinVWS\OpenIDConnectLaravel\Services\JWE\JweDecryptInterface;
 use MinVWS\OpenIDConnectLaravel\Services\JWE\JweDecryptService;
 use MinVWS\OpenIDConnectLaravel\Services\ExceptionHandler;
 use MinVWS\OpenIDConnectLaravel\Services\ExceptionHandlerInterface;
+use MinVWS\OpenIDConnectLaravel\Services\JWS\PrivateKeyJWTBuilder;
 
 class OpenIDConnectServiceProvider extends ServiceProvider
 {
@@ -95,12 +99,14 @@ class OpenIDConnectServiceProvider extends ServiceProvider
     protected function registerClient(): void
     {
         $this->app->singleton(OpenIDConnectClient::class, function (Application $app) {
+            $clientId = $app['config']->get('oidc.client_id');
+
             $oidc = new OpenIDConnectClient(
                 providerUrl: $app['config']->get('oidc.issuer'),
                 jweDecrypter: $app->make(JweDecryptInterface::class),
                 openIDConfiguration: $app->make(OpenIDConfigurationLoader::class)->getConfiguration(),
             );
-            $oidc->setClientID($app['config']->get('oidc.client_id'));
+            $oidc->setClientID($clientId);
             if (!empty($app['config']->get('oidc.client_secret'))) {
                 $oidc->setClientSecret($app['config']->get('oidc.client_secret'));
             }
@@ -115,6 +121,21 @@ class OpenIDConnectServiceProvider extends ServiceProvider
             }
 
             $oidc->setTlsVerify($app['config']->get('oidc.tls_verify'));
+
+            if (!empty($app['config']->get('client_authentication.signing_private_key_path'))) {
+                // Explicit allow of private_key_jwt
+                $oidc->setTokenEndpointAuthMethodsSupported(['private_key_jwt']);
+
+                $privateKeyJwtBuilder = new PrivateKeyJWTBuilder(
+                    clientId: $clientId,
+                    jwsBuilder: new JWSBuilder(new AlgorithmManager([config('client_authentication.signing_algorithm')])),
+                    signatureKey: $app['config']->get('client_authentication.signing_private_key_path'),
+                    signatureAlgorithm: $app['config']->get('client_authentication.signing_algorithm'),
+                    serializer: new CompactSerializer()
+                );
+                $oidc->setPrivateKeyJwtGenerator($privateKeyJwtBuilder);
+            }
+
             return $oidc;
         });
     }
