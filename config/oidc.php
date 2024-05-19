@@ -90,4 +90,26 @@ return [
      * @link https://docs.guzzlephp.org/en/latest/request-options.html#verify
      */
     'tls_verify' => env('OIDC_TLS_VERIFY', true),
+
+    'mtls' => [
+        'enabled' => env('OIDC_MTLS_ENABLED', false),
+
+        /**
+         * mTLS Certificate path - Used as the certificate path for Guzzle.
+         *
+         * The file should contain a PEM formatted client side certificate.
+         *
+         * @link https://docs.guzzlephp.org/en/latest/request-options.html#cert
+         */
+        'certificate_path' => env('OIDC_MTLS_CERTIFICATE_PATH'),
+
+        /**
+         * mTLS Private Key path - Used as the private SSL key path for Guzzle
+         *
+         * The file should contain a private SSL key in PEM format.
+         *
+         * @link https://docs.guzzlephp.org/en/stable/request-options.html#ssl-key
+         */
+        'private_key_path' => env('OIDC_MTLS_PRIVATE_KEY_PATH'),
+    ],
 ];
