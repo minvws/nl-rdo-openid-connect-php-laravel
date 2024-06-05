@@ -35,7 +35,17 @@ return [
          * For a list of supported algorithms see https://tools.ietf.org/html/rfc7518#section-3.1
          */
         'signing_algorithm' => env('OIDC_SIGNING_ALGORITHM', 'RS256'),
-        
+
+        /**
+         * When you want to use `private_key_jwt` client authentication then need
+         * to specify the available signature algorithms.
+         *
+         * The input is used for the AlgorithmManager and should be a list of class names.
+         * See https://web-token.spomky-labs.com/the-components/algorithm-management-jwa
+         */
+        'signature_algorithms' => [
+            \Jose\Component\Signature\Algorithm\RS256::class,
+        ],
     ],
 
     /**

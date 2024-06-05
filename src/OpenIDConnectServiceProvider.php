@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace MinVWS\OpenIDConnectLaravel;
 
+use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Jose\Component\Core\Algorithm;
 use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Core\JWKSet;
 use Jose\Component\KeyManagement\JWKFactory;
@@ -127,13 +129,15 @@ class OpenIDConnectServiceProvider extends ServiceProvider
                 // Explicit allow of private_key_jwt
                 $oidc->setTokenEndpointAuthMethodsSupported(['private_key_jwt']);
 
-                $signingAlgorithm = $app['config']->get('oidc.client_authentication.signing_algorithm');
+                $algorithms = $this->parseSignatureAlgorithms($app['config']);
+                $singingAlgorithm = $app['config']->get('oidc.client_authentication.signing_algorithm');
+                $signingPrivateKey = JWKFactory::createFromKeyFile($signingPrivateKeyPath);
 
                 $privateKeyJwtBuilder = new PrivateKeyJWTBuilder(
                     clientId: $clientId,
-                    jwsBuilder: new JWSBuilder(new AlgorithmManager([$signingAlgorithm])),
-                    signatureKey: $signingPrivateKeyPath,
-                    signatureAlgorithm: $signingAlgorithm,
+                    jwsBuilder: new JWSBuilder(new AlgorithmManager($algorithms)),
+                    signatureKey: $signingPrivateKey,
+                    signatureAlgorithm: $singingAlgorithm,
                     serializer: new CompactSerializer()
                 );
                 $oidc->setPrivateKeyJwtGenerator($privateKeyJwtBuilder);
@@ -183,5 +187,22 @@ class OpenIDConnectServiceProvider extends ServiceProvider
         }
 
         return new JWKSet($keys);
+    }
+
+    /**
+     * @param ConfigRepository $config
+     * @return array<Algorithm>
+     */
+    protected function parseSignatureAlgorithms(ConfigRepository $config): array
+    {
+        /** @var ?array<class-string<Algorithm>> $algorithms */
+        $algorithms = $config->get('oidc.client_authentication.signature_algorithms');
+        if (!is_array($algorithms)) {
+            return [];
+        }
+
+        return array_map(function (string $algorithm) {
+            return new $algorithm();
+        }, $algorithms);
     }
 }
