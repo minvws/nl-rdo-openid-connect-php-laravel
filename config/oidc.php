@@ -28,7 +28,7 @@ return [
         /**
          * When you want to use `private_key_jwt` client authentication then you can specify the path to the private key.
          */
-        'signing_private_key_path' => env('OIDC_SIGNING_PRIVATE_KEY_PATH', ''),
+        'signing_private_key_path' => env('OIDC_SIGNING_PRIVATE_KEY_PATH'),
 
         /**
          * When you want to use `private_key_jwt` client authentication then you can specify the signing algorithm.

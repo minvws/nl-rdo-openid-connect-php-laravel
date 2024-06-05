@@ -122,15 +122,18 @@ class OpenIDConnectServiceProvider extends ServiceProvider
 
             $oidc->setTlsVerify($app['config']->get('oidc.tls_verify'));
 
-            if (!empty($app['config']->get('client_authentication.signing_private_key_path'))) {
+            $signingPrivateKeyPath = $app['config']->get('client_authentication.signing_private_key_path');
+            if (!empty($signingPrivateKeyPath)) {
                 // Explicit allow of private_key_jwt
                 $oidc->setTokenEndpointAuthMethodsSupported(['private_key_jwt']);
 
+                $signingAlgorithm = $app['config']->get('client_authentication.signing_algorithm');
+
                 $privateKeyJwtBuilder = new PrivateKeyJWTBuilder(
                     clientId: $clientId,
-                    jwsBuilder: new JWSBuilder(new AlgorithmManager([config('client_authentication.signing_algorithm')])),
-                    signatureKey: $app['config']->get('client_authentication.signing_private_key_path'),
-                    signatureAlgorithm: $app['config']->get('client_authentication.signing_algorithm'),
+                    jwsBuilder: new JWSBuilder(new AlgorithmManager([$signingAlgorithm])),
+                    signatureKey: $signingPrivateKeyPath,
+                    signatureAlgorithm: $signingAlgorithm,
                     serializer: new CompactSerializer()
                 );
                 $oidc->setPrivateKeyJwtGenerator($privateKeyJwtBuilder);
