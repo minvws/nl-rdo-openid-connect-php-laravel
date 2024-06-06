@@ -24,7 +24,6 @@ return [
      * Configuration for the token authentication.
      */
     'client_authentication' => [
-
         /**
          * When you want to use `private_key_jwt` client authentication then you can specify the path to the private key.
          */

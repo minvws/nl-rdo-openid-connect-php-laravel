@@ -126,9 +126,6 @@ class OpenIDConnectServiceProvider extends ServiceProvider
 
             $signingPrivateKeyPath = $app['config']->get('oidc.client_authentication.signing_private_key_path');
             if (!empty($signingPrivateKeyPath)) {
-                // Explicit allow of private_key_jwt
-                $oidc->setTokenEndpointAuthMethodsSupported(['private_key_jwt']);
-
                 $algorithms = $this->parseSignatureAlgorithms($app['config']);
                 $singingAlgorithm = $app['config']->get('oidc.client_authentication.signing_algorithm');
                 $signingPrivateKey = JWKFactory::createFromKeyFile($signingPrivateKeyPath);
@@ -140,7 +137,10 @@ class OpenIDConnectServiceProvider extends ServiceProvider
                     signatureAlgorithm: $singingAlgorithm,
                     serializer: new CompactSerializer()
                 );
+
+                // Set private key JWT generator and explicit allow of private_key_jwt
                 $oidc->setPrivateKeyJwtGenerator($privateKeyJwtBuilder);
+                $oidc->setTokenEndpointAuthMethodsSupported(['private_key_jwt']);
             }
 
             return $oidc;
