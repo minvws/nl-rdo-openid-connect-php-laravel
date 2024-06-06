@@ -6,7 +6,7 @@ namespace MinVWS\OpenIDConnectLaravel\Services\JWS;
 
 use Jose\Component\Core\JWK;
 use Jose\Component\Signature\JWSBuilder;
-use Jose\Component\Signature\Serializer\CompactSerializer;
+use Jose\Component\Signature\Serializer\JWSSerializer;
 
 class PrivateKeyJWTBuilder
 {
@@ -15,7 +15,7 @@ class PrivateKeyJWTBuilder
         protected JWSBuilder $jwsBuilder,
         protected JWK $signatureKey,
         protected string $signatureAlgorithm,
-        protected CompactSerializer $serializer
+        protected JWSSerializer $serializer
     ) {
     }
 
