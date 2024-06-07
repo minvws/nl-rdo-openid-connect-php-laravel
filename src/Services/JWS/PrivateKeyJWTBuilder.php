@@ -26,13 +26,16 @@ class PrivateKeyJWTBuilder
 
     protected function getPayload(string $audience): string
     {
+        $jti = hash('sha256', bin2hex(random_bytes(64)));
+        $now = time();
+
         return json_encode([
-            'iat' => time(),
-            'nbf' => time(),
-            'exp' => time() + 300,
             'iss' => $this->clientId,
             'sub' => $this->clientId,
             'aud' => $audience,
+            'jti' => $jti,
+            'exp' => $now + 300,
+            'iat' => $now,
         ], JSON_THROW_ON_ERROR);
     }
 

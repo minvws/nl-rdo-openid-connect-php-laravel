@@ -70,12 +70,12 @@ class PrivateKeyJWTBuilderTest extends TestCase
                 $payload = json_decode($jws->getPayload(), true);
 
                 $iat = $payload['iat'];
-                $this->assertSame($iat, $payload['nbf']);
                 $this->assertSame($iat + 300, $payload['exp']);
 
                 $this->assertSame('client_id', $payload['iss']);
                 $this->assertSame('client_id', $payload['sub']);
                 $this->assertSame('audience', $payload['aud']);
+                $this->assertNotEmpty($payload['jti']);
 
                 return true;
             });
