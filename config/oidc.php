@@ -45,6 +45,12 @@ return [
         'signature_algorithms' => [
             \Jose\Component\Signature\Algorithm\RS256::class,
         ],
+
+        /**
+         * Token lifetime in seconds, used to set the expiration time of the JWT.
+         * This is used when you are using `private_key_jwt` client authentication.
+         */
+        'token_lifetime_in_seconds' => 60,
     ],
 
     /**

@@ -32,6 +32,7 @@ class PrivateKeyJWTBuilderTest extends TestCase
     protected $privateKeyResource;
     protected string $publicKey;
     protected AlgorithmManager $algorithmManager;
+    protected int $tokenLifetimeInSeconds = 60;
 
     protected function setUp(): void
     {
@@ -70,7 +71,7 @@ class PrivateKeyJWTBuilderTest extends TestCase
                 $payload = json_decode($jws->getPayload(), true);
 
                 $iat = $payload['iat'];
-                $this->assertSame($iat + 300, $payload['exp']);
+                $this->assertSame($iat + $this->tokenLifetimeInSeconds, $payload['exp']);
 
                 $this->assertSame('client_id', $payload['iss']);
                 $this->assertSame('client_id', $payload['sub']);
@@ -86,6 +87,7 @@ class PrivateKeyJWTBuilderTest extends TestCase
             getJwkFromResource($this->privateKeyResource),
             'RS256',
             $mockSerializer,
+            $this->tokenLifetimeInSeconds,
         );
 
         $builder->__invoke('audience');
@@ -120,6 +122,7 @@ class PrivateKeyJWTBuilderTest extends TestCase
             getJwkFromResource($this->privateKeyResource),
             'RS256',
             new CompactSerializer(),
+            $this->tokenLifetimeInSeconds,
         );
 
         return $builder->__invoke($audience);

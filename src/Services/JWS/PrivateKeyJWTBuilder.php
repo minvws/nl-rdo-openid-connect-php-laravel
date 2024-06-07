@@ -15,7 +15,8 @@ class PrivateKeyJWTBuilder
         protected JWSBuilder $jwsBuilder,
         protected JWK $signatureKey,
         protected string $signatureAlgorithm,
-        protected JWSSerializer $serializer
+        protected JWSSerializer $serializer,
+        protected int $tokenLifetimeInSeconds,
     ) {
     }
 
@@ -34,7 +35,7 @@ class PrivateKeyJWTBuilder
             'sub' => $this->clientId,
             'aud' => $audience,
             'jti' => $jti,
-            'exp' => $now + 300,
+            'exp' => $now + $this->tokenLifetimeInSeconds,
             'iat' => $now,
         ], JSON_THROW_ON_ERROR);
     }

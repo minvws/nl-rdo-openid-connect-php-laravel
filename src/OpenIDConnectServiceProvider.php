@@ -127,15 +127,17 @@ class OpenIDConnectServiceProvider extends ServiceProvider
             $signingPrivateKeyPath = $app['config']->get('oidc.client_authentication.signing_private_key_path');
             if (!empty($signingPrivateKeyPath)) {
                 $algorithms = $this->parseSignatureAlgorithms($app['config']);
-                $singingAlgorithm = $app['config']->get('oidc.client_authentication.signing_algorithm');
                 $signingPrivateKey = JWKFactory::createFromKeyFile($signingPrivateKeyPath);
+                $singingAlgorithm = $app['config']->get('oidc.client_authentication.signing_algorithm');
+                $tokenLifetimeInSeconds = $app['config']->get('oidc.client_authentication.token_lifetime_in_seconds');
 
                 $privateKeyJwtBuilder = new PrivateKeyJWTBuilder(
                     clientId: $clientId,
                     jwsBuilder: new JWSBuilder(new AlgorithmManager($algorithms)),
                     signatureKey: $signingPrivateKey,
                     signatureAlgorithm: $singingAlgorithm,
-                    serializer: new CompactSerializer()
+                    serializer: new CompactSerializer(),
+                    tokenLifetimeInSeconds: $tokenLifetimeInSeconds,
                 );
 
                 // Set private key JWT generator and explicit allow of private_key_jwt
