@@ -29,7 +29,7 @@ But complex vulnerabilities may require further explanation.
 
 ## Dont's
 
-- Reveal the vulnerability or problem to others until it is resolved.
+- Reveal the finding to others until it is resolved.
 - Build your own backdoor in an information system with the intention of then using it to demonstrate the vulnerability, because doing so can cause additional damage and create unnecessary security risks.
 - Utilise a vulnerability further than necessary to establish its existence.
 - Copy, modify or delete data on the system. An alternative for doing so is making a directory listing of the system.
