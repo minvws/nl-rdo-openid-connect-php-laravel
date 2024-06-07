@@ -43,7 +43,7 @@ But complex vulnerabilities may require further explanation.
 - If you have followed the instructions above, we will not take any legal action against you concerning the report.
 - We will not pass on your personal details to third parties without your permission, unless it is necessary to comply with a legal obligation. Reporting under a pseudonym or anonymous is possible.
 - We will keep you informed of the progress towards resolving the finding.
-- In the public information concerning the reported finding, we will give your name as the discoverer of the problem (unless you desire otherwise).
+- In the public information concerning the reported finding, we will give your name as the discoverer of the finding (unless you desire otherwise).
 
 We strive to resolve all findings as quickly as possible, and we would like to play an active role in the ultimate publication on the finding after it is resolved.
 
