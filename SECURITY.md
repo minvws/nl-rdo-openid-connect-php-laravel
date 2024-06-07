@@ -27,7 +27,7 @@ and finally a public disclosure (and CVE number/report at MITRE).
 - Provide sufficient information to reproduce the problem, so we will be able to resolve it. Usually, the IP address or the URL of the affected system and a description of the vulnerability will be sufficient. 
 But complex vulnerabilities may require further explanation.
 
-## Don'ts
+## Dont's
 
 - Reveal the vulnerability or problem to others until it is resolved.
 - Build your own backdoor in an information system with the intention of then using it to demonstrate the vulnerability, because doing so can cause additional damage and create unnecessary security risks.
