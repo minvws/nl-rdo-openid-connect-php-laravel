@@ -24,8 +24,8 @@ and finally a public disclosure (and CVE number/report at MITRE).
 
 - Report the vulnerability as quickly as is reasonably possible, to minimise the risk of hostile actors finding it and taking advantage of it.
 - Report in a manner that safeguards the confidentiality of the report so that others do not gain access to the information.
-- Provide sufficient information to reproduce the problem, so we will be able to resolve it. Usually,
-- the IP address or the URL of the affected system and a description of the vulnerability will be sufficient. But complex vulnerabilities may require further explanation.
+- Provide sufficient information to reproduce the problem, so we will be able to resolve it. Usually, the IP address or the URL of the affected system and a description of the vulnerability will be sufficient. 
+But complex vulnerabilities may require further explanation.
 
 ## Don'ts
 
