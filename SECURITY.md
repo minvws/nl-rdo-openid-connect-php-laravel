@@ -49,4 +49,4 @@ We strive to resolve all problems as quickly as possible, and we would like to p
 
 This Responsible Disclosure policy is based on an example written by Floor Terra and the [Responsible Disclosure Guideline of the NCSC](https://english.ncsc.nl/publications/publications/2019/juni/01/coordinated-vulnerability-disclosure-the-guideline).
 
-The information on <https://www.ncsc.nl/contact/kwetsbaarheid-melden> is authoritative
+The information on <https://www.ncsc.nl/contact/kwetsbaarheid-melden> is authoritative.
