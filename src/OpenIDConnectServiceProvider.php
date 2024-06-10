@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 namespace MinVWS\OpenIDConnectLaravel;
 
+use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Jose\Component\Core\Algorithm;
+use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Core\JWKSet;
 use Jose\Component\KeyManagement\JWKFactory;
+use Jose\Component\Signature\JWSBuilder;
+use Jose\Component\Signature\Serializer\CompactSerializer;
 use MinVWS\OpenIDConnectLaravel\Http\Responses\LoginResponseHandler;
 use MinVWS\OpenIDConnectLaravel\Http\Responses\LoginResponseHandlerInterface;
 use MinVWS\OpenIDConnectLaravel\OpenIDConfiguration\OpenIDConfigurationLoader;
@@ -16,6 +21,7 @@ use MinVWS\OpenIDConnectLaravel\Services\JWE\JweDecryptInterface;
 use MinVWS\OpenIDConnectLaravel\Services\JWE\JweDecryptService;
 use MinVWS\OpenIDConnectLaravel\Services\ExceptionHandler;
 use MinVWS\OpenIDConnectLaravel\Services\ExceptionHandlerInterface;
+use MinVWS\OpenIDConnectLaravel\Services\JWS\PrivateKeyJWTBuilder;
 
 class OpenIDConnectServiceProvider extends ServiceProvider
 {
@@ -95,12 +101,14 @@ class OpenIDConnectServiceProvider extends ServiceProvider
     protected function registerClient(): void
     {
         $this->app->singleton(OpenIDConnectClient::class, function (Application $app) {
+            $clientId = $app['config']->get('oidc.client_id');
+
             $oidc = new OpenIDConnectClient(
                 providerUrl: $app['config']->get('oidc.issuer'),
                 jweDecrypter: $app->make(JweDecryptInterface::class),
                 openIDConfiguration: $app->make(OpenIDConfigurationLoader::class)->getConfiguration(),
             );
-            $oidc->setClientID($app['config']->get('oidc.client_id'));
+            $oidc->setClientID($clientId);
             if (!empty($app['config']->get('oidc.client_secret'))) {
                 $oidc->setClientSecret($app['config']->get('oidc.client_secret'));
             }
@@ -115,6 +123,28 @@ class OpenIDConnectServiceProvider extends ServiceProvider
             }
 
             $oidc->setTlsVerify($app['config']->get('oidc.tls_verify'));
+
+            $signingPrivateKeyPath = $app['config']->get('oidc.client_authentication.signing_private_key_path');
+            if (!empty($signingPrivateKeyPath)) {
+                $algorithms = $this->parseSignatureAlgorithms($app['config']);
+                $signingPrivateKey = JWKFactory::createFromKeyFile($signingPrivateKeyPath);
+                $singingAlgorithm = $app['config']->get('oidc.client_authentication.signing_algorithm');
+                $tokenLifetimeInSeconds = $app['config']->get('oidc.client_authentication.token_lifetime_in_seconds');
+
+                $privateKeyJwtBuilder = new PrivateKeyJWTBuilder(
+                    clientId: $clientId,
+                    jwsBuilder: new JWSBuilder(new AlgorithmManager($algorithms)),
+                    signatureKey: $signingPrivateKey,
+                    signatureAlgorithm: $singingAlgorithm,
+                    serializer: new CompactSerializer(),
+                    tokenLifetimeInSeconds: $tokenLifetimeInSeconds,
+                );
+
+                // Set private key JWT generator and explicit allow of private_key_jwt
+                $oidc->setPrivateKeyJwtGenerator($privateKeyJwtBuilder);
+                $oidc->setTokenEndpointAuthMethodsSupported(['private_key_jwt']);
+            }
+
             return $oidc;
         });
     }
@@ -159,5 +189,22 @@ class OpenIDConnectServiceProvider extends ServiceProvider
         }
 
         return new JWKSet($keys);
+    }
+
+    /**
+     * @param ConfigRepository $config
+     * @return array<Algorithm>
+     */
+    protected function parseSignatureAlgorithms(ConfigRepository $config): array
+    {
+        /** @var ?array<class-string<Algorithm>> $algorithms */
+        $algorithms = $config->get('oidc.client_authentication.signature_algorithms');
+        if (!is_array($algorithms)) {
+            return [];
+        }
+
+        return array_map(function (string $algorithm) {
+            return new $algorithm();
+        }, $algorithms);
     }
 }

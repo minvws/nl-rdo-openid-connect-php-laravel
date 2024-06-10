@@ -14,7 +14,10 @@ use MinVWS\OpenIDConnectLaravel\OpenIDConfiguration\OpenIDConfigurationLoader;
 use MinVWS\OpenIDConnectLaravel\Tests\TestCase;
 use Mockery;
 
-use function MinVWS\OpenIDConnectLaravel\Tests\generateJwt;
+use function MinVWS\OpenIDConnectLaravel\Tests\{
+    generateJwt,
+    generateOpenSSLKey,
+};
 
 class LoginControllerResponseTest extends TestCase
 {
@@ -90,7 +93,9 @@ class LoginControllerResponseTest extends TestCase
         array $codeChallengesSupportedAtProvider,
         bool $codeChallengeShouldBeSet,
     ): void {
-        $this->mockOpenIDConfigurationLoader($codeChallengesSupportedAtProvider);
+        $this->mockOpenIDConfigurationLoader(
+            codeChallengeMethodsSupported: $codeChallengesSupportedAtProvider,
+        );
         Config::set('oidc.code_challenge_method', $requestedCodeChallengeMethod);
 
         // Check if code verified is not set in cache.
@@ -207,21 +212,95 @@ class LoginControllerResponseTest extends TestCase
         });
     }
 
-    protected function mockOpenIDConfigurationLoader(array $codeChallengeMethodsSupported = []): void
+    public function testTokenSignedWithPrivateKey(): void
     {
+        Http::fake([
+            // Token requested by OpenIDConnectClient::authenticate() function.
+            'https://provider.rdobeheer.nl/token' => Http::response([
+                'access_token' => 'access-token-from-token-endpoint',
+                'id_token' => 'does-not-matter-not-testing-id-token',
+                'token_type' => 'Bearer',
+                'expires_in' => 3600,
+            ]),
+        ]);
+
+        // Set OIDC provider configuration
+        $this->mockOpenIDConfigurationLoader(tokenEndpointAuthMethodsSupported: ['private_key_jwt']);
+
+        Config::set('oidc.issuer', 'https://provider.rdobeheer.nl');
+        Config::set('oidc.client_id', 'test-client-id');
+
+        // Set client private key
+        [$key, $keyResource] = generateOpenSSLKey();
+        Config::set('oidc.client_authentication.signing_private_key_path', stream_get_meta_data($keyResource)['uri']);
+
+        // Set current state, normally this is generated before logging in and send
+        // to the issuer, when the user is redirected for login.
+        Session::put('openid_connect_state', 'some-state');
+
+        // We simulate here that the user now comes back after successful login at issuer.
+        $this->getRoute('oidc.login', ['code' => 'some-code', 'state' => 'some-state']);
+
+        // Check if state and nonce are removed from session.
+        $this->assertEmpty(session('openid_connect_state'));
+        $this->assertEmpty(session('openid_connect_nonce'));
+
+        Http::assertSentCount(1);
+        Http::assertSentInOrder([
+            'https://provider.rdobeheer.nl/token',
+        ]);
+        Http::assertSent(function (Request $request) {
+            if (!in_array($request->url(), ['https://provider.rdobeheer.nl/token'], true)) {
+                return false;
+            }
+
+            if ($request->url() === 'https://provider.rdobeheer.nl/token') {
+                $this->assertSame(
+                    expected: 'POST',
+                    actual: $request->method(),
+                );
+
+                // We only check if the client_assertion is set in the request body.
+                // The JWT of the PrivateKeyJWTBuilder is tested in a separate test.
+                $this->assertStringStartsWith(
+                    prefix: 'grant_type=authorization_code'
+                    . '&code=some-code'
+                    . '&redirect_uri=http%3A%2F%2Flocalhost%2Foidc%2Flogin'
+                    . '&client_id=test-client-id'
+                    . '&client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer'
+                    . '&client_assertion=eyJhbGciOiJSUzI1NiJ9.',
+                    string: $request->body(),
+                );
+
+                return true;
+            }
+
+            return true;
+        });
+    }
+
+    protected function mockOpenIDConfigurationLoader(
+        array $tokenEndpointAuthMethodsSupported = ["none"],
+        array $codeChallengeMethodsSupported = [],
+    ): void {
         $mock = Mockery::mock(OpenIDConfigurationLoader::class);
         $mock
             ->shouldReceive('getConfiguration')
-            ->andReturn($this->exampleOpenIDConfiguration($codeChallengeMethodsSupported));
+            ->andReturn($this->exampleOpenIDConfiguration(
+                tokenEndpointAuthMethodsSupported: $tokenEndpointAuthMethodsSupported,
+                codeChallengeMethodsSupported: $codeChallengeMethodsSupported,
+            ));
 
         $this->app->instance(OpenIDConfigurationLoader::class, $mock);
     }
 
-    protected function exampleOpenIDConfiguration(array $codeChallengeMethodsSupported = []): OpenIDConfiguration
-    {
+    protected function exampleOpenIDConfiguration(
+        array $tokenEndpointAuthMethodsSupported = ["none"],
+        array $codeChallengeMethodsSupported = [],
+    ): OpenIDConfiguration {
         return new OpenIDConfiguration(
             version: "3.0",
-            tokenEndpointAuthMethodsSupported: ["none"],
+            tokenEndpointAuthMethodsSupported: $tokenEndpointAuthMethodsSupported,
             claimsParameterSupported: true,
             requestParameterSupported: false,
             requestUriParameterSupported: true,

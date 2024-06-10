@@ -21,6 +21,39 @@ return [
     'client_secret' => env('OIDC_CLIENT_SECRET', ''),
 
     /**
+     * Configuration for the token authentication.
+     */
+    'client_authentication' => [
+        /**
+         * When you want to use `private_key_jwt` client authentication then you can specify the path to the private key.
+         */
+        'signing_private_key_path' => env('OIDC_SIGNING_PRIVATE_KEY_PATH'),
+
+        /**
+         * When you want to use `private_key_jwt` client authentication then you can specify the signing algorithm.
+         * For a list of supported algorithms see https://tools.ietf.org/html/rfc7518#section-3.1
+         */
+        'signing_algorithm' => env('OIDC_SIGNING_ALGORITHM', 'RS256'),
+
+        /**
+         * When you want to use `private_key_jwt` client authentication then need
+         * to specify the available signature algorithms.
+         *
+         * The input is used for the AlgorithmManager and should be a list of class names.
+         * See https://web-token.spomky-labs.com/the-components/algorithm-management-jwa
+         */
+        'signature_algorithms' => [
+            \Jose\Component\Signature\Algorithm\RS256::class,
+        ],
+
+        /**
+         * Token lifetime in seconds, used to set the expiration time of the JWT.
+         * This is used when you are using `private_key_jwt` client authentication.
+         */
+        'token_lifetime_in_seconds' => 60,
+    ],
+
+    /**
      * Only needed when response of user info endpoint is encrypted.
      * This is the path to the JWE decryption key.
      *
