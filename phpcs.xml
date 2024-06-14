@@ -2,6 +2,8 @@
 <ruleset>
     <arg name="basepath" value="."/>
 
+    <file>./config</file>
+    <file>./routes</file>
     <file>./src</file>
     <file>./tests</file>
 
