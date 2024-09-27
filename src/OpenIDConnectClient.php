@@ -20,15 +20,6 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
 {
     protected ?JweDecryptInterface $jweDecrypter;
     protected ?OpenIDConfiguration $openIDConfiguration;
-    /**
-     * @var int|null Response code from the server
-     */
-    protected ?int $responseCode;
-
-    /**
-     * @var string|null Content type from the server
-     */
-    private ?string $responseContentType;
 
     public function __construct(
         ?string $providerUrl = null,
