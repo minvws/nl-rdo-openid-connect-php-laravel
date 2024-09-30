@@ -253,6 +253,72 @@ class LoginControllerResponseTest extends TestCase
         });
     }
 
+    public function testIdTokenSignedWithIncorrectClientSecret(): void
+    {
+        $idToken = generateJwt([
+            "iss" => "https://provider.rdobeheer.nl",
+            "aud" => 'test-client-id',
+            "sub" => 'test-subject',
+        ], 'not-the-secret-client-secret');
+
+        Http::fake([
+            // Token requested by OpenIDConnectClient::authenticate() function.
+            'https://provider.rdobeheer.nl/token' => Http::response([
+                'access_token' => 'access-token-from-token-endpoint',
+                'id_token' => $idToken,
+                'token_type' => 'Bearer',
+                'expires_in' => 3600,
+            ]),
+        ]);
+
+        // Set OIDC config
+        $this->mockOpenIDConfigurationLoader();
+        Config::set('oidc.issuer', 'https://provider.rdobeheer.nl');
+        Config::set('oidc.client_id', 'test-client-id');
+        Config::set('oidc.client_secret', 'the-secret-client-secret');
+
+        // Mock LoginResponseHandlerInterface to check handleExceptionWhileAuthenticate is called.
+        $mock = Mockery::mock(ExceptionHandlerInterface::class);
+        $mock
+            ->shouldReceive('handleExceptionWhileAuthenticate')
+            ->withArgs(function (OpenIDConnectClientException $e) {
+                return $e->getMessage() === 'Unable to verify signature';
+            })
+            ->once();
+        $this->app->instance(ExceptionHandlerInterface::class, $mock);
+
+        // Set the current state, which is usually generated and saved in the session before login,
+        // and sent to the issuer during the login redirect.
+        Session::put('openid_connect_state', 'some-state');
+
+        // We simulate here that the user now comes back after successful login at issuer.
+        $this->getRoute('oidc.login', ['code' => 'some-code', 'state' => 'some-state']);
+
+        Http::assertSentCount(1);
+        Http::assertSentInOrder([
+            'https://provider.rdobeheer.nl/token',
+        ]);
+        Http::assertSent(function (Request $request) {
+            if ($request->url() === 'https://provider.rdobeheer.nl/token') {
+                $this->assertSame(
+                    expected: 'POST',
+                    actual: $request->method(),
+                );
+                $this->assertSame(
+                    expected: 'grant_type=authorization_code'
+                    . '&code=some-code'
+                    . '&redirect_uri=http%3A%2F%2Flocalhost%2Foidc%2Flogin'
+                    . '&client_id=test-client-id'
+                    . '&client_secret=the-secret-client-secret',
+                    actual: $request->body(),
+                );
+                return true;
+            }
+            return true;
+        });
+    }
+
+
     public function testTokenSignedWithPrivateKey(): void
     {
         Http::fake([
