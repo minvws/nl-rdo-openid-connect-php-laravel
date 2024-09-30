@@ -152,14 +152,14 @@ class LoginControllerResponseTest extends TestCase
         Config::set('oidc.client_secret', 'the-secret-client-secret');
 
         // Mock LoginResponseHandlerInterface to check handleExceptionWhileAuthenticate is called.
-        $mock = Mockery::mock(ExceptionHandlerInterface::class);
-        $mock
+        $mockExceptionHandler = Mockery::mock(ExceptionHandlerInterface::class);
+        $mockExceptionHandler
             ->shouldReceive('handleExceptionWhileAuthenticate')
             ->withArgs(function (OpenIDConnectClientException $e) {
                 return $e->getMessage() === 'Unable to determine state';
             })
             ->once();
-        $this->app->instance(ExceptionHandlerInterface::class, $mock);
+        $this->app->instance(ExceptionHandlerInterface::class, $mockExceptionHandler);
 
         // Set the current state, which is usually generated and saved in the session before login,
         // and sent to the issuer during the login redirect.
@@ -278,14 +278,14 @@ class LoginControllerResponseTest extends TestCase
         Config::set('oidc.client_secret', 'the-secret-client-secret');
 
         // Mock LoginResponseHandlerInterface to check handleExceptionWhileAuthenticate is called.
-        $mock = Mockery::mock(ExceptionHandlerInterface::class);
-        $mock
+        $mockExceptionHandler = Mockery::mock(ExceptionHandlerInterface::class);
+        $mockExceptionHandler
             ->shouldReceive('handleExceptionWhileAuthenticate')
             ->withArgs(function (OpenIDConnectClientException $e) {
                 return $e->getMessage() === 'Unable to verify signature';
             })
             ->once();
-        $this->app->instance(ExceptionHandlerInterface::class, $mock);
+        $this->app->instance(ExceptionHandlerInterface::class, $mockExceptionHandler);
 
         // Set the current state, which is usually generated and saved in the session before login,
         // and sent to the issuer during the login redirect.
@@ -370,6 +370,105 @@ class LoginControllerResponseTest extends TestCase
                 'email' => 'tester@rdobeheer.nl',
             ]
         ]);
+
+        $this->assertEmpty(session('openid_connect_state'));
+        $this->assertEmpty(session('openid_connect_nonce'));
+
+        Http::assertSentCount(2);
+        Http::assertSentInOrder([
+            'https://provider.rdobeheer.nl/token',
+            'https://provider.rdobeheer.nl/userinfo?schema=openid',
+        ]);
+        Http::assertSent(function (Request $request) {
+            if ($request->url() === 'https://provider.rdobeheer.nl/token') {
+                $this->assertSame(
+                    expected: 'POST',
+                    actual: $request->method(),
+                );
+                $this->assertSame(
+                    expected: 'grant_type=authorization_code'
+                    . '&code=some-code'
+                    . '&redirect_uri=http%3A%2F%2Flocalhost%2Foidc%2Flogin'
+                    . '&client_id=test-client-id'
+                    . '&client_secret=the-secret-client-secret',
+                    actual: $request->body(),
+                );
+                return true;
+            }
+
+            if ($request->url() === 'https://provider.rdobeheer.nl/userinfo?schema=openid') {
+                $this->assertSame(
+                    expected: 'GET',
+                    actual: $request->method(),
+                );
+                $this->assertSame(
+                    expected: [
+                        'Bearer access-token-from-token-endpoint'
+                    ],
+                    actual: $request->header('Authorization'),
+                );
+            }
+
+            return true;
+        });
+    }
+
+    public function testSubClaimIdTokenDoesNotEqualsSubClaimUserinfo(): void
+    {
+        $idToken = generateJwt([
+            "iss" => "https://provider.rdobeheer.nl",
+            "aud" => 'test-client-id',
+            "sub" => 'test-subject',
+        ], 'the-secret-client-secret');
+
+        $signedUserInfo = generateJwt([
+            "iss" => "https://provider.rdobeheer.nl",
+            "aud" => 'test-client-id',
+            "sub" => 'different-subject',
+            "email" => 'tester@rdobeheer.nl',
+        ], 'the-secret-client-secret');
+
+        Http::fake([
+            // Token requested by OpenIDConnectClient::authenticate() function.
+            'https://provider.rdobeheer.nl/token' => Http::response([
+                'access_token' => 'access-token-from-token-endpoint',
+                'id_token' => $idToken,
+                'token_type' => 'Bearer',
+                'expires_in' => 3600,
+            ]),
+            // User info requested by OpenIDConnectClient::requestUserInfo() function.
+            'https://provider.rdobeheer.nl/userinfo?schema=openid' => Http::response(
+                body: $signedUserInfo,
+                status: 200,
+                headers: [
+                    'Content-Type' => 'application/jwt',
+                ]
+            ),
+        ]);
+
+        // Set OIDC config
+        $this->mockOpenIDConfigurationLoader();
+
+        Config::set('oidc.issuer', 'https://provider.rdobeheer.nl');
+        Config::set('oidc.client_id', 'test-client-id');
+        Config::set('oidc.client_secret', 'the-secret-client-secret');
+
+        // Mock LoginResponseHandlerInterface to check handleExceptionWhileRequestUserInfo is called.
+        $mockExceptionHandler = Mockery::mock(ExceptionHandlerInterface::class);
+        $mockExceptionHandler
+            ->shouldReceive('handleExceptionWhileRequestUserInfo')
+            ->withArgs(function (OpenIDConnectClientException $e) {
+                return $e->getMessage() === 'Invalid JWT signature';
+            })
+            ->once();
+        $this->app->instance(ExceptionHandlerInterface::class, $mockExceptionHandler);
+
+        // Set the current state, which is usually generated and saved in the session before login,
+        // and sent to the issuer during the login redirect.
+        Session::put('openid_connect_state', 'some-state');
+
+        // We simulate here that the user now comes back after successful login at issuer.
+        $this->getRoute('oidc.login', ['code' => 'some-code', 'state' => 'some-state']);
 
         $this->assertEmpty(session('openid_connect_state'));
         $this->assertEmpty(session('openid_connect_nonce'));
