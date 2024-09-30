@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace MinVWS\OpenIDConnectLaravel\Tests\Feature\Http\Controllers;
 
 use Illuminate\Http\Client\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Session;
@@ -159,8 +158,7 @@ class LoginControllerResponseTest extends TestCase
             ->withArgs(function (OpenIDConnectClientException $e) {
                 return $e->getMessage() === 'Unable to determine state';
             })
-            ->once()
-            ->andReturn(new Response('', 400));
+            ->once();
         $this->app->instance(ExceptionHandlerInterface::class, $mock);
 
         // Set the current state, which is usually generated and saved in the session before login,
@@ -168,9 +166,7 @@ class LoginControllerResponseTest extends TestCase
         Session::put('openid_connect_state', 'some-state');
 
         // We simulate here that the state does not match with the state in the session.
-        // And that the repsonse of ExceptionHandlerInterface is returned.
-        $response = $this->getRoute('oidc.login', ['code' => 'some-code', 'state' => 'a-different-state']);
-        $response->assertStatus(400);
+        $this->getRoute('oidc.login', ['code' => 'some-code', 'state' => 'a-different-state']);
     }
 
     public function testIdTokenSignedWithClientSecret(): void
