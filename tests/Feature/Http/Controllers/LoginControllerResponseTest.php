@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace MinVWS\OpenIDConnectLaravel\Tests\Feature\Http\Controllers;
 
 use Illuminate\Http\Client\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Testing\TestResponse;
+use Jumbojett\OpenIDConnectClientException;
 use MinVWS\OpenIDConnectLaravel\OpenIDConfiguration\OpenIDConfiguration;
 use MinVWS\OpenIDConnectLaravel\OpenIDConfiguration\OpenIDConfigurationLoader;
+use MinVWS\OpenIDConnectLaravel\Services\ExceptionHandlerInterface;
 use MinVWS\OpenIDConnectLaravel\Tests\TestCase;
 use Mockery;
 
@@ -129,11 +132,53 @@ class LoginControllerResponseTest extends TestCase
         ];
     }
 
-    public function testTokenSignedWithClientSecret(): void
+    public function testStateDoesNotMatch(): void
+    {
+        Http::fake([
+            // Token requested by OpenIDConnectClient::authenticate() function.
+            // Currently needed because the package requests the token endpoint before checking the state.
+            // TODO: Remove if https://github.com/jumbojett/OpenID-Connect-PHP/pull/447 is merged.
+            'https://provider.rdobeheer.nl/token' => Http::response([
+                'access_token' => 'access-token-from-token-endpoint',
+                'id_token' => 'some-valid-token-not-needed-for-this-state-check',
+                'token_type' => 'Bearer',
+                'expires_in' => 3600,
+            ]),
+        ]);
+
+        // Set OIDC config
+        $this->mockOpenIDConfigurationLoader();
+        Config::set('oidc.issuer', 'https://provider.rdobeheer.nl');
+        Config::set('oidc.client_id', 'test-client-id');
+        Config::set('oidc.client_secret', 'the-secret-client-secret');
+
+        // Mock LoginResponseHandlerInterface to check handleExceptionWhileAuthenticate is called.
+        $mock = Mockery::mock(ExceptionHandlerInterface::class);
+        $mock
+            ->shouldReceive('handleExceptionWhileAuthenticate')
+            ->withArgs(function (OpenIDConnectClientException $e) {
+                return $e->getMessage() === 'Unable to determine state';
+            })
+            ->once()
+            ->andReturn(new Response('', 400));
+        $this->app->instance(ExceptionHandlerInterface::class, $mock);
+
+        // Set the current state, which is usually generated and saved in the session before login,
+        // and sent to the issuer during the login redirect.
+        Session::put('openid_connect_state', 'some-state');
+
+        // We simulate here that the state does not match with the state in the session.
+        // And that the repsonse of ExceptionHandlerInterface is returned.
+        $response = $this->getRoute('oidc.login', ['code' => 'some-code', 'state' => 'a-different-state']);
+        $response->assertStatus(400);
+    }
+
+    public function testIdTokenSignedWithClientSecret(): void
     {
         $idToken = generateJwt([
             "iss" => "https://provider.rdobeheer.nl",
             "aud" => 'test-client-id',
+            "sub" => 'test-subject',
         ], 'the-secret-client-secret');
 
         Http::fake([
@@ -146,7 +191,7 @@ class LoginControllerResponseTest extends TestCase
             ]),
             // User info requested by OpenIDConnectClient::requestUserInfo() function.
             'https://provider.rdobeheer.nl/userinfo?schema=openid' => Http::response([
-                'email' => 'teste@rdobeheer.nl',
+                'email' => 'tester@rdobeheer.nl',
             ]),
         ]);
 
@@ -157,8 +202,8 @@ class LoginControllerResponseTest extends TestCase
         Config::set('oidc.client_id', 'test-client-id');
         Config::set('oidc.client_secret', 'the-secret-client-secret');
 
-        // Set current state, normally this is generated before logging in and send
-        // to the issuer, when the user is redirected for login.
+        // Set the current state, which is usually generated and saved in the session before login,
+        // and sent to the issuer during the login redirect.
         Session::put('openid_connect_state', 'some-state');
 
         // We simulate here that the user now comes back after successful login at issuer.
@@ -166,7 +211,7 @@ class LoginControllerResponseTest extends TestCase
         $response->assertStatus(200);
         $response->assertJson([
             'userInfo' => [
-                'email' => 'teste@rdobeheer.nl',
+                'email' => 'tester@rdobeheer.nl',
             ]
         ]);
 
@@ -234,8 +279,8 @@ class LoginControllerResponseTest extends TestCase
         [$key, $keyResource] = generateOpenSSLKey();
         Config::set('oidc.client_authentication.signing_private_key_path', stream_get_meta_data($keyResource)['uri']);
 
-        // Set current state, normally this is generated before logging in and send
-        // to the issuer, when the user is redirected for login.
+        // Set the current state, which is usually generated and saved in the session before login,
+        // and sent to the issuer during the login redirect.
         Session::put('openid_connect_state', 'some-state');
 
         // We simulate here that the user now comes back after successful login at issuer.
