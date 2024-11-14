@@ -13,6 +13,7 @@ use MinVWS\OpenIDConnectLaravel\OpenIDConfiguration\OpenIDConfiguration;
 use MinVWS\OpenIDConnectLaravel\OpenIDConfiguration\OpenIDConfigurationLoader;
 use MinVWS\OpenIDConnectLaravel\Tests\TestCase;
 use Mockery;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 use function MinVWS\OpenIDConnectLaravel\Tests\{
     generateJwt,
@@ -85,9 +86,7 @@ class LoginControllerResponseTest extends TestCase
             ->assertRedirectContains('client_id=test-client-id');
     }
 
-    /**
-     * @dataProvider codeChallengeMethodProvider
-     */
+    #[DataProvider('codeChallengeMethodProvider')]
     public function testCodeChallengeIsSetWhenSupported(
         ?string $requestedCodeChallengeMethod,
         array $codeChallengesSupportedAtProvider,
@@ -119,7 +118,7 @@ class LoginControllerResponseTest extends TestCase
         }
     }
 
-    public function codeChallengeMethodProvider(): array
+    public static function codeChallengeMethodProvider(): array
     {
         return [
             'no code challenge method requested' => [null, [], false],

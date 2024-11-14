@@ -10,6 +10,7 @@ use MinVWS\OpenIDConnectLaravel\OpenIDConfiguration\OpenIDConfigurationLoader;
 use MinVWS\OpenIDConnectLaravel\OpenIDConnectClient;
 use MinVWS\OpenIDConnectLaravel\Tests\TestCase;
 use Mockery;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class LoginControllerTest extends TestCase
 {
@@ -40,9 +41,7 @@ class LoginControllerTest extends TestCase
             ->assertRedirectContains('code_challenge_method=S256');
     }
 
-    /**
-     * @dataProvider scopesProvider
-     */
+    #[DataProvider('scopesProvider')]
     public function testLoginRouteRedirectsToAuthorizeUrlOfProviderWithScopes(
         array $additionalScopes,
         string $scopeInUrl
