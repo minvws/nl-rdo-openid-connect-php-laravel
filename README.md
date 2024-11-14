@@ -80,3 +80,7 @@ If you encounter any issues or have suggestions for improvements, please feel fr
 
 ## License
 This package is open-source and released under the [European Union Public License version 1.2](https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12). You are free to use, modify, and distribute the package in accordance with the terms of the license.
+
+## Part of iCore
+
+This package is part of the iCore project.
