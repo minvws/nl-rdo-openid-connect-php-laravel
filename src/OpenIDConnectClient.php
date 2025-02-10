@@ -21,6 +21,11 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
     protected ?JweDecryptInterface $jweDecrypter;
     protected ?OpenIDConfiguration $openIDConfiguration;
 
+    /**
+     * @var string|null Content type from the server
+     */
+    private ?string $internalResponseContentType = null;
+
     public function __construct(
         ?string $providerUrl = null,
         ?string $clientId = null,
@@ -190,7 +195,7 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
         }
 
         $this->responseCode = $request->status();
-        $this->responseContentType = $request->header('Content-Type');
+        $this->internalResponseContentType = $request->header('Content-Type');
 
         if ($request->failed()) {
             throw new OpenIDConnectClientException(
@@ -218,7 +223,7 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
      */
     public function getResponseContentType(): ?string
     {
-        return $this->responseContentType;
+        return $this->internalResponseContentType;
     }
 
     public function setTlsVerify(bool|string $tlsVerify): void
