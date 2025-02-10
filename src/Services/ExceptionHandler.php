@@ -103,6 +103,8 @@ class ExceptionHandler implements ExceptionHandlerInterface
 
     protected function getRequest(): ?Request
     {
-        return request();
+        /** @psalm-var Request $request */
+        $request = request();
+        return $request;
     }
 }
