@@ -103,11 +103,6 @@ class ExceptionHandler implements ExceptionHandlerInterface
 
     protected function getRequest(): ?Request
     {
-        $request = request();
-        if (!($request instanceof Request)) {
-            return null;
-        }
-
-        return $request;
+        return request();
     }
 }
