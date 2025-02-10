@@ -32,7 +32,7 @@ class LoginControllerTest extends TestCase
         $response = $this->get(route('oidc.login'));
         $response
             ->assertStatus(302)
-            ->assertRedirectContains("https://provider.rdobeheer.nl/authorize")
+            ->assertRedirectContains("https://provider.example.com/authorize")
             ->assertRedirectContains('response_type=code')
             ->assertRedirectContains('redirect_uri=http%3A%2F%2Flocalhost%2Foidc%2Flogin')
             ->assertRedirectContains('client_id=test-client-id')
@@ -55,7 +55,7 @@ class LoginControllerTest extends TestCase
         $response = $this->get(route('oidc.login', ['login_hint' => 'test-login-hint']));
         $response
             ->assertStatus(302)
-            ->assertRedirectContains("https://provider.rdobeheer.nl/authorize")
+            ->assertRedirectContains("https://provider.example.com/authorize")
             ->assertRedirectContains('test-client-id')
             ->assertRedirectContains('login_hint=test-login-hint')
             ->assertRedirectContains($scopeInUrl);
@@ -79,7 +79,7 @@ class LoginControllerTest extends TestCase
         $response = $this->get(route('oidc.login', ['login_hint' => 'test-login-hint']));
         $response
             ->assertStatus(302)
-            ->assertRedirectContains("https://provider.rdobeheer.nl/authorize")
+            ->assertRedirectContains("https://provider.example.com/authorize")
             ->assertRedirectContains('test-client-id')
             ->assertRedirectContains('login_hint=test-login-hint');
     }
@@ -139,16 +139,16 @@ class LoginControllerTest extends TestCase
             frontchannelLogoutSessionSupported: false,
             backchannelLogoutSupported: false,
             backchannelLogoutSessionSupported: false,
-            issuer: "https://provider.rdobeheer.nl",
-            authorizationEndpoint: "https://provider.rdobeheer.nl/authorize",
-            jwksUri: "https://provider.rdobeheer.nl/jwks",
-            tokenEndpoint: "https://provider.rdobeheer.nl/token",
+            issuer: "https://provider.example.com",
+            authorizationEndpoint: "https://provider.example.com/authorize",
+            jwksUri: "https://provider.example.com/jwks",
+            tokenEndpoint: "https://provider.example.com/token",
             scopesSupported: ["openid"],
             responseTypesSupported: ["code"],
             responseModesSupported: ["query"],
             subjectTypesSupported: ["pairwise"],
             idTokenSigningAlgValuesSupported: ["RS256"],
-            userinfoEndpoint: "https://provider.rdobeheer.nl/userinfo",
+            userinfoEndpoint: "https://provider.example.com/userinfo",
             codeChallengeMethodsSupported: ["S256"],
         );
     }
