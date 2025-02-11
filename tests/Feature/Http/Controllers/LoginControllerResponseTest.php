@@ -9,8 +9,10 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Testing\TestResponse;
+use Jumbojett\OpenIDConnectClientException;
 use MinVWS\OpenIDConnectLaravel\OpenIDConfiguration\OpenIDConfiguration;
 use MinVWS\OpenIDConnectLaravel\OpenIDConfiguration\OpenIDConfigurationLoader;
+use MinVWS\OpenIDConnectLaravel\Services\ExceptionHandlerInterface;
 use MinVWS\OpenIDConnectLaravel\Tests\TestCase;
 use Mockery;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -77,7 +79,7 @@ class LoginControllerResponseTest extends TestCase
 
         $response
             ->assertStatus(302)
-            ->assertRedirectContains("https://provider.rdobeheer.nl/authorize")
+            ->assertRedirectContains("https://provider.example.com/authorize")
             ->assertRedirectContains('response_type=code')
             ->assertRedirectContains('redirect_uri=http%3A%2F%2Flocalhost%2Foidc%2Flogin')
             ->assertRedirectContains('client_id=test-client-id')
@@ -105,7 +107,7 @@ class LoginControllerResponseTest extends TestCase
 
         $response
             ->assertStatus(302)
-            ->assertRedirectContains("https://provider.rdobeheer.nl/authorize");
+            ->assertRedirectContains("https://provider.example.com/authorize");
 
         if ($codeChallengeShouldBeSet) {
             $response
@@ -128,36 +130,75 @@ class LoginControllerResponseTest extends TestCase
         ];
     }
 
-    public function testTokenSignedWithClientSecret(): void
+    public function testStateDoesNotMatch(): void
+    {
+        Http::fake([
+            // Token requested by OpenIDConnectClient::authenticate() function.
+            // Currently needed because the package requests the token endpoint before checking the state.
+            // TODO: Remove if https://github.com/jumbojett/OpenID-Connect-PHP/pull/447 is merged.
+            'https://provider.example.com/token' => Http::response([
+                'access_token' => 'access-token-from-token-endpoint',
+                'id_token' => 'some-valid-token-not-needed-for-this-state-check',
+                'token_type' => 'Bearer',
+                'expires_in' => 3600,
+            ]),
+        ]);
+
+        // Set OIDC config
+        $this->mockOpenIDConfigurationLoader();
+        Config::set('oidc.issuer', 'https://provider.example.com');
+        Config::set('oidc.client_id', 'test-client-id');
+        Config::set('oidc.client_secret', 'the-secret-client-secret');
+
+        // Mock LoginResponseHandlerInterface to check handleExceptionWhileAuthenticate is called.
+        $mockExceptionHandler = Mockery::mock(ExceptionHandlerInterface::class);
+        $mockExceptionHandler
+            ->shouldReceive('handleExceptionWhileAuthenticate')
+            ->withArgs(function (OpenIDConnectClientException $e) {
+                return $e->getMessage() === 'Unable to determine state';
+            })
+            ->once();
+        $this->app->instance(ExceptionHandlerInterface::class, $mockExceptionHandler);
+
+        // Set the current state, which is usually generated and saved in the session before login,
+        // and sent to the issuer during the login redirect.
+        Session::put('openid_connect_state', 'some-state');
+
+        // We simulate here that the state does not match with the state in the session.
+        $this->getRoute('oidc.login', ['code' => 'some-code', 'state' => 'a-different-state']);
+    }
+
+    public function testIdTokenSignedWithClientSecret(): void
     {
         $idToken = generateJwt([
-            "iss" => "https://provider.rdobeheer.nl",
+            "iss" => "https://provider.example.com",
             "aud" => 'test-client-id',
+            "sub" => 'test-subject',
         ], 'the-secret-client-secret');
 
         Http::fake([
             // Token requested by OpenIDConnectClient::authenticate() function.
-            'https://provider.rdobeheer.nl/token' => Http::response([
+            'https://provider.example.com/token' => Http::response([
                 'access_token' => 'access-token-from-token-endpoint',
                 'id_token' => $idToken,
                 'token_type' => 'Bearer',
                 'expires_in' => 3600,
             ]),
             // User info requested by OpenIDConnectClient::requestUserInfo() function.
-            'https://provider.rdobeheer.nl/userinfo?schema=openid' => Http::response([
-                'email' => 'teste@rdobeheer.nl',
+            'https://provider.example.com/userinfo?schema=openid' => Http::response([
+                'email' => 'tester@example.com',
             ]),
         ]);
 
         // Set OIDC config
         $this->mockOpenIDConfigurationLoader();
 
-        Config::set('oidc.issuer', 'https://provider.rdobeheer.nl');
+        Config::set('oidc.issuer', 'https://provider.example.com');
         Config::set('oidc.client_id', 'test-client-id');
         Config::set('oidc.client_secret', 'the-secret-client-secret');
 
-        // Set current state, normally this is generated before logging in and send
-        // to the issuer, when the user is redirected for login.
+        // Set the current state, which is usually generated and saved in the session before login,
+        // and sent to the issuer during the login redirect.
         Session::put('openid_connect_state', 'some-state');
 
         // We simulate here that the user now comes back after successful login at issuer.
@@ -165,7 +206,7 @@ class LoginControllerResponseTest extends TestCase
         $response->assertStatus(200);
         $response->assertJson([
             'userInfo' => [
-                'email' => 'teste@rdobeheer.nl',
+                'email' => 'tester@example.com',
             ]
         ]);
 
@@ -174,11 +215,11 @@ class LoginControllerResponseTest extends TestCase
 
         Http::assertSentCount(2);
         Http::assertSentInOrder([
-            'https://provider.rdobeheer.nl/token',
-            'https://provider.rdobeheer.nl/userinfo?schema=openid',
+            'https://provider.example.com/token',
+            'https://provider.example.com/userinfo?schema=openid',
         ]);
         Http::assertSent(function (Request $request) {
-            if ($request->url() === 'https://provider.rdobeheer.nl/token') {
+            if ($request->url() === 'https://provider.example.com/token') {
                 $this->assertSame(
                     expected: 'POST',
                     actual: $request->method(),
@@ -194,7 +235,266 @@ class LoginControllerResponseTest extends TestCase
                 return true;
             }
 
-            if ($request->url() === 'https://provider.rdobeheer.nl/userinfo?schema=openid') {
+            if ($request->url() === 'https://provider.example.com/userinfo?schema=openid') {
+                $this->assertSame(
+                    expected: 'GET',
+                    actual: $request->method(),
+                );
+                $this->assertSame(
+                    expected: [
+                        'Bearer access-token-from-token-endpoint'
+                    ],
+                    actual: $request->header('Authorization'),
+                );
+            }
+
+            return true;
+        });
+    }
+
+    public function testIdTokenSignedWithIncorrectClientSecret(): void
+    {
+        $idToken = generateJwt([
+            "iss" => "https://provider.example.com",
+            "aud" => 'test-client-id',
+            "sub" => 'test-subject',
+        ], 'not-the-secret-client-secret');
+
+        Http::fake([
+            // Token requested by OpenIDConnectClient::authenticate() function.
+            'https://provider.example.com/token' => Http::response([
+                'access_token' => 'access-token-from-token-endpoint',
+                'id_token' => $idToken,
+                'token_type' => 'Bearer',
+                'expires_in' => 3600,
+            ]),
+        ]);
+
+        // Set OIDC config
+        $this->mockOpenIDConfigurationLoader();
+        Config::set('oidc.issuer', 'https://provider.example.com');
+        Config::set('oidc.client_id', 'test-client-id');
+        Config::set('oidc.client_secret', 'the-secret-client-secret');
+
+        // Mock LoginResponseHandlerInterface to check handleExceptionWhileAuthenticate is called.
+        $mockExceptionHandler = Mockery::mock(ExceptionHandlerInterface::class);
+        $mockExceptionHandler
+            ->shouldReceive('handleExceptionWhileAuthenticate')
+            ->withArgs(function (OpenIDConnectClientException $e) {
+                return $e->getMessage() === 'Unable to verify signature';
+            })
+            ->once();
+        $this->app->instance(ExceptionHandlerInterface::class, $mockExceptionHandler);
+
+        // Set the current state, which is usually generated and saved in the session before login,
+        // and sent to the issuer during the login redirect.
+        Session::put('openid_connect_state', 'some-state');
+
+        // We simulate here that the user now comes back after successful login at issuer.
+        $this->getRoute('oidc.login', ['code' => 'some-code', 'state' => 'some-state']);
+
+        Http::assertSentCount(1);
+        Http::assertSentInOrder([
+            'https://provider.example.com/token',
+        ]);
+        Http::assertSent(function (Request $request) {
+            if ($request->url() === 'https://provider.example.com/token') {
+                $this->assertSame(
+                    expected: 'POST',
+                    actual: $request->method(),
+                );
+                $this->assertSame(
+                    expected: 'grant_type=authorization_code'
+                    . '&code=some-code'
+                    . '&redirect_uri=http%3A%2F%2Flocalhost%2Foidc%2Flogin'
+                    . '&client_id=test-client-id'
+                    . '&client_secret=the-secret-client-secret',
+                    actual: $request->body(),
+                );
+                return true;
+            }
+            return true;
+        });
+    }
+
+    public function testIdTokenAndUserinfoSignedWithClientSecret(): void
+    {
+        $idToken = generateJwt([
+            "iss" => "https://provider.example.com",
+            "aud" => 'test-client-id',
+            "sub" => 'test-subject',
+        ], 'the-secret-client-secret');
+
+        $signedUserInfo = generateJwt([
+            "iss" => "https://provider.example.com",
+            "aud" => 'test-client-id',
+            "sub" => 'test-subject',
+            "email" => 'tester@example.com',
+        ], 'the-secret-client-secret');
+
+        Http::fake([
+            // Token requested by OpenIDConnectClient::authenticate() function.
+            'https://provider.example.com/token' => Http::response([
+                'access_token' => 'access-token-from-token-endpoint',
+                'id_token' => $idToken,
+                'token_type' => 'Bearer',
+                'expires_in' => 3600,
+            ]),
+            // User info requested by OpenIDConnectClient::requestUserInfo() function.
+            'https://provider.example.com/userinfo?schema=openid' => Http::response(
+                body: $signedUserInfo,
+                status: 200,
+                headers: [
+                    'Content-Type' => 'application/jwt',
+                ]
+            ),
+        ]);
+
+        // Set OIDC config
+        $this->mockOpenIDConfigurationLoader();
+
+        Config::set('oidc.issuer', 'https://provider.example.com');
+        Config::set('oidc.client_id', 'test-client-id');
+        Config::set('oidc.client_secret', 'the-secret-client-secret');
+
+        // Set the current state, which is usually generated and saved in the session before login,
+        // and sent to the issuer during the login redirect.
+        Session::put('openid_connect_state', 'some-state');
+
+        // We simulate here that the user now comes back after successful login at issuer.
+        $response = $this->getRoute('oidc.login', ['code' => 'some-code', 'state' => 'some-state']);
+        $response->assertStatus(200);
+        $response->assertJson([
+            'userInfo' => [
+                'email' => 'tester@example.com',
+            ]
+        ]);
+
+        $this->assertEmpty(session('openid_connect_state'));
+        $this->assertEmpty(session('openid_connect_nonce'));
+
+        Http::assertSentCount(2);
+        Http::assertSentInOrder([
+            'https://provider.example.com/token',
+            'https://provider.example.com/userinfo?schema=openid',
+        ]);
+        Http::assertSent(function (Request $request) {
+            if ($request->url() === 'https://provider.example.com/token') {
+                $this->assertSame(
+                    expected: 'POST',
+                    actual: $request->method(),
+                );
+                $this->assertSame(
+                    expected: 'grant_type=authorization_code'
+                    . '&code=some-code'
+                    . '&redirect_uri=http%3A%2F%2Flocalhost%2Foidc%2Flogin'
+                    . '&client_id=test-client-id'
+                    . '&client_secret=the-secret-client-secret',
+                    actual: $request->body(),
+                );
+                return true;
+            }
+
+            if ($request->url() === 'https://provider.example.com/userinfo?schema=openid') {
+                $this->assertSame(
+                    expected: 'GET',
+                    actual: $request->method(),
+                );
+                $this->assertSame(
+                    expected: [
+                        'Bearer access-token-from-token-endpoint'
+                    ],
+                    actual: $request->header('Authorization'),
+                );
+            }
+
+            return true;
+        });
+    }
+
+    public function testSubClaimIdTokenDoesNotEqualsSubClaimUserinfo(): void
+    {
+        $idToken = generateJwt([
+            "iss" => "https://provider.example.com",
+            "aud" => 'test-client-id',
+            "sub" => 'test-subject',
+        ], 'the-secret-client-secret');
+
+        $signedUserInfo = generateJwt([
+            "iss" => "https://provider.example.com",
+            "aud" => 'test-client-id',
+            "sub" => 'different-subject',
+            "email" => 'tester@example.com',
+        ], 'the-secret-client-secret');
+
+        Http::fake([
+            // Token requested by OpenIDConnectClient::authenticate() function.
+            'https://provider.example.com/token' => Http::response([
+                'access_token' => 'access-token-from-token-endpoint',
+                'id_token' => $idToken,
+                'token_type' => 'Bearer',
+                'expires_in' => 3600,
+            ]),
+            // User info requested by OpenIDConnectClient::requestUserInfo() function.
+            'https://provider.example.com/userinfo?schema=openid' => Http::response(
+                body: $signedUserInfo,
+                status: 200,
+                headers: [
+                    'Content-Type' => 'application/jwt',
+                ]
+            ),
+        ]);
+
+        // Set OIDC config
+        $this->mockOpenIDConfigurationLoader();
+
+        Config::set('oidc.issuer', 'https://provider.example.com');
+        Config::set('oidc.client_id', 'test-client-id');
+        Config::set('oidc.client_secret', 'the-secret-client-secret');
+
+        // Mock LoginResponseHandlerInterface to check handleExceptionWhileRequestUserInfo is called.
+        $mockExceptionHandler = Mockery::mock(ExceptionHandlerInterface::class);
+        $mockExceptionHandler
+            ->shouldReceive('handleExceptionWhileRequestUserInfo')
+            ->withArgs(function (OpenIDConnectClientException $e) {
+                return $e->getMessage() === 'Invalid JWT signature';
+            })
+            ->once();
+        $this->app->instance(ExceptionHandlerInterface::class, $mockExceptionHandler);
+
+        // Set the current state, which is usually generated and saved in the session before login,
+        // and sent to the issuer during the login redirect.
+        Session::put('openid_connect_state', 'some-state');
+
+        // We simulate here that the user now comes back after successful login at issuer.
+        $this->getRoute('oidc.login', ['code' => 'some-code', 'state' => 'some-state']);
+
+        $this->assertEmpty(session('openid_connect_state'));
+        $this->assertEmpty(session('openid_connect_nonce'));
+
+        Http::assertSentCount(2);
+        Http::assertSentInOrder([
+            'https://provider.example.com/token',
+            'https://provider.example.com/userinfo?schema=openid',
+        ]);
+        Http::assertSent(function (Request $request) {
+            if ($request->url() === 'https://provider.example.com/token') {
+                $this->assertSame(
+                    expected: 'POST',
+                    actual: $request->method(),
+                );
+                $this->assertSame(
+                    expected: 'grant_type=authorization_code'
+                    . '&code=some-code'
+                    . '&redirect_uri=http%3A%2F%2Flocalhost%2Foidc%2Flogin'
+                    . '&client_id=test-client-id'
+                    . '&client_secret=the-secret-client-secret',
+                    actual: $request->body(),
+                );
+                return true;
+            }
+
+            if ($request->url() === 'https://provider.example.com/userinfo?schema=openid') {
                 $this->assertSame(
                     expected: 'GET',
                     actual: $request->method(),
@@ -215,7 +515,7 @@ class LoginControllerResponseTest extends TestCase
     {
         Http::fake([
             // Token requested by OpenIDConnectClient::authenticate() function.
-            'https://provider.rdobeheer.nl/token' => Http::response([
+            'https://provider.example.com/token' => Http::response([
                 'access_token' => 'access-token-from-token-endpoint',
                 'id_token' => 'does-not-matter-not-testing-id-token',
                 'token_type' => 'Bearer',
@@ -226,15 +526,15 @@ class LoginControllerResponseTest extends TestCase
         // Set OIDC provider configuration
         $this->mockOpenIDConfigurationLoader(tokenEndpointAuthMethodsSupported: ['private_key_jwt']);
 
-        Config::set('oidc.issuer', 'https://provider.rdobeheer.nl');
+        Config::set('oidc.issuer', 'https://provider.example.com');
         Config::set('oidc.client_id', 'test-client-id');
 
         // Set client private key
         [$key, $keyResource] = generateOpenSSLKey();
         Config::set('oidc.client_authentication.signing_private_key_path', stream_get_meta_data($keyResource)['uri']);
 
-        // Set current state, normally this is generated before logging in and send
-        // to the issuer, when the user is redirected for login.
+        // Set the current state, which is usually generated and saved in the session before login,
+        // and sent to the issuer during the login redirect.
         Session::put('openid_connect_state', 'some-state');
 
         // We simulate here that the user now comes back after successful login at issuer.
@@ -246,14 +546,14 @@ class LoginControllerResponseTest extends TestCase
 
         Http::assertSentCount(1);
         Http::assertSentInOrder([
-            'https://provider.rdobeheer.nl/token',
+            'https://provider.example.com/token',
         ]);
         Http::assertSent(function (Request $request) {
-            if (!in_array($request->url(), ['https://provider.rdobeheer.nl/token'], true)) {
+            if (!in_array($request->url(), ['https://provider.example.com/token'], true)) {
                 return false;
             }
 
-            if ($request->url() === 'https://provider.rdobeheer.nl/token') {
+            if ($request->url() === 'https://provider.example.com/token') {
                 $this->assertSame(
                     expected: 'POST',
                     actual: $request->method(),
@@ -309,16 +609,16 @@ class LoginControllerResponseTest extends TestCase
             frontchannelLogoutSessionSupported: false,
             backchannelLogoutSupported: false,
             backchannelLogoutSessionSupported: false,
-            issuer: "https://provider.rdobeheer.nl",
-            authorizationEndpoint: "https://provider.rdobeheer.nl/authorize",
-            jwksUri: "https://provider.rdobeheer.nl/jwks",
-            tokenEndpoint: "https://provider.rdobeheer.nl/token",
+            issuer: "https://provider.example.com",
+            authorizationEndpoint: "https://provider.example.com/authorize",
+            jwksUri: "https://provider.example.com/jwks",
+            tokenEndpoint: "https://provider.example.com/token",
             scopesSupported: ["openid"],
             responseTypesSupported: ["code"],
             responseModesSupported: ["query"],
             subjectTypesSupported: ["pairwise"],
             idTokenSigningAlgValuesSupported: ["RS256"],
-            userinfoEndpoint: "https://provider.rdobeheer.nl/userinfo",
+            userinfoEndpoint: "https://provider.example.com/userinfo",
             codeChallengeMethodsSupported: $codeChallengeMethodsSupported,
         );
     }
