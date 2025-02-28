@@ -75,14 +75,14 @@ jobs:
             - name: Coding style PSR12 Check
               run: vendor/bin/phpcs
             
-            - name: 'Run SonarCloud scanner'
+            - name: 'Run SonarQube cloud scanner'
               if: ${{contains(github.ref, '/pull/')}}
-              uses: SonarSource/sonarcloud-github-action@v2.2.0
+              uses: SonarSource/sonarqube-scan-action@v5
               env:
                 SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-            - name: 'Run SonarCloud scanner'
+            - name: 'Run SonarQube cloud scanner'
               if: ${{!contains(github.ref, '/pull/')}}
-              uses: SonarSource/sonarcloud-github-action@v2.2.0
+              uses: SonarSource/sonarqube-scan-action@v5
               env:
                 SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
               with:
