@@ -10,7 +10,7 @@ use MinVWS\OpenIDConnectLaravel\Tests\TestCase;
 use OpenSSLCertificate;
 
 use function MinVWS\OpenIDConnectLaravel\Tests\{
-    generateOpenSSLKey,
+    generateInsecureOpenSSLKey,
     generateX509Certificate,
     buildJweString,
     buildExamplePayload
@@ -27,7 +27,7 @@ class JweDecryptInterfaceBindingTest extends TestCase
 
     public function setUp(): void
     {
-        [$key, $keyResource] = generateOpenSSLKey();
+        [$key, $keyResource] = generateInsecureOpenSSLKey();
         $this->decryptionKeyResource = $keyResource;
         $this->recipient = generateX509Certificate($key);
 

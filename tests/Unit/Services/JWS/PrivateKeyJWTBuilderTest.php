@@ -20,7 +20,7 @@ use OpenSSLAsymmetricKey;
 use PHPUnit\Framework\TestCase;
 
 use function MinVWS\OpenIDConnectLaravel\Tests\{
-    generateOpenSSLKey,
+    generateInsecureOpenSSLKey,
     getJwkFromResource,
 };
 
@@ -38,7 +38,7 @@ class PrivateKeyJWTBuilderTest extends TestCase
     {
         parent::setUp();
 
-        [$privateKey, $privateKeyResource] = generateOpenSSLKey();
+        [$privateKey, $privateKeyResource] = generateInsecureOpenSSLKey();
 
         $this->privateKey = $privateKey;
         $this->privateKeyResource = $privateKeyResource;
