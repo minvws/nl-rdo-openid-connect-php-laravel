@@ -53,11 +53,10 @@ jobs:
                   composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update --dev --ignore-platform-reqs
                   composer update --${{ matrix.stability }} --prefer-dist --no-interaction --ignore-platform-reqs
 
-            - name: Setup problem matchers for PHP
-              run: echo "::add-matcher::${{ runner.tool_cache }}/php.json"
-
-            - name: Setup problem matchers for PHPUnit
-              run: echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
+            - name: Setup problem matchers
+              run: |
+                echo "::add-matcher::${{ runner.tool_cache }}/php.json"
+                echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
 
             - name: Execute tests (Unit and Feature)
               run: vendor/bin/phpunit
