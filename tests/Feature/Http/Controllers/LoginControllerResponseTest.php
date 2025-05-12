@@ -19,7 +19,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 
 use function MinVWS\OpenIDConnectLaravel\Tests\{
     generateJwt,
-    generateOpenSSLKey,
+    generateInsecureOpenSSLKey,
 };
 
 class LoginControllerResponseTest extends TestCase
@@ -530,7 +530,7 @@ class LoginControllerResponseTest extends TestCase
         Config::set('oidc.client_id', 'test-client-id');
 
         // Set client private key
-        [$key, $keyResource] = generateOpenSSLKey();
+        [$key, $keyResource] = generateInsecureOpenSSLKey();
         Config::set('oidc.client_authentication.signing_private_key_path', stream_get_meta_data($keyResource)['uri']);
 
         // Set the current state, which is usually generated and saved in the session before login,

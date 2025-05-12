@@ -17,7 +17,7 @@ use OpenSSLCertificate;
 use PHPUnit\Framework\TestCase;
 
 use function MinVWS\OpenIDConnectLaravel\Tests\{
-    generateOpenSSLKey,
+    generateInsecureOpenSSLKey,
     generateX509Certificate,
     getJwkFromResource,
     buildJweString,
@@ -37,7 +37,7 @@ class JweDecryptServiceTest extends TestCase
     {
         parent::setUp();
 
-        [$key, $keyResource] = generateOpenSSLKey();
+        [$key, $keyResource] = generateInsecureOpenSSLKey();
         $this->decryptionKeyResource = $keyResource;
 
         $this->decryptionKeySet = new JWKSet([
@@ -92,7 +92,7 @@ class JweDecryptServiceTest extends TestCase
         $this->expectExceptionMessage('Failed to decrypt JWE');
 
         // Create different key
-        [$key, $keyResource] = generateOpenSSLKey();
+        [$key, $keyResource] = generateInsecureOpenSSLKey();
         $jwk = getJwkFromResource($keyResource);
         $decryptionKeySet = new JWKSet([$jwk]);
 
@@ -149,10 +149,10 @@ class JweDecryptServiceTest extends TestCase
      */
     public function testJweDecryptionWithMultipleKeysInKeySet(): void
     {
-        [$firstRecipientKey, $firstRecipientKeyResource] = generateOpenSSLKey();
+        [$firstRecipientKey, $firstRecipientKeyResource] = generateInsecureOpenSSLKey();
         $firstRecipient = generateX509Certificate($firstRecipientKey);
 
-        [$secondRecipientKey, $secondRecipientKeyResource] = generateOpenSSLKey();
+        [$secondRecipientKey, $secondRecipientKeyResource] = generateInsecureOpenSSLKey();
         $secondRecipient = generateX509Certificate($secondRecipientKey);
 
         $payload = buildExamplePayload();

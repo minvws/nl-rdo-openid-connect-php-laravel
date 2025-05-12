@@ -60,9 +60,22 @@ function buildExamplePayload(): string
 
 /**
  * Generate OpenSSL Key and return the tempfile resource
+ *
+ * Warning: This function generates a key with 512 bits, which is considered insecure.
+ * This is only for testing purposes.
+ *
  * @return array{OpenSSLAsymmetricKey, resource}
  */
-function generateOpenSSLKey(): array
+function generateInsecureOpenSSLKey(): array
+{
+    return generateOpenSSLKey(bits: 512);
+}
+
+/**
+ * Generate OpenSSL Key and return the tempfile resource
+ * @return array{OpenSSLAsymmetricKey, resource}
+ */
+function generateOpenSSLKey(int $bits = 2048): array
 {
     $file = tmpfile();
     if (!is_resource($file)) {
@@ -70,7 +83,7 @@ function generateOpenSSLKey(): array
     }
 
     $key = openssl_pkey_new([
-        'private_key_bits' => 512,
+        'private_key_bits' => $bits,
         'private_key_type' => OPENSSL_KEYTYPE_RSA,
     ]);
     if (!$key instanceof OpenSSLAsymmetricKey) {
