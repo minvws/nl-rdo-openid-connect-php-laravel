@@ -180,8 +180,8 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
      * @return string
      * @throws OpenIDConnectClientException
      */
-    protected function fetchURL(string $url, string $post_body = null, array $headers = []): string
     #[\Override]
+    protected function fetchURL(string $url, ?string $post_body = null, array $headers = []): string
     {
         $pendingRequest = Http::withUserAgent($this->getUserAgent())
             ->timeout($this->timeOut)
