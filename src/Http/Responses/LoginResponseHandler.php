@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class LoginResponseHandler implements LoginResponseHandlerInterface
 {
+    #[\Override]
     public function handleLoginResponse(object $userInfo): Response
     {
         return new JsonResponse([

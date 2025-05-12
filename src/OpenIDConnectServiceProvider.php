@@ -25,6 +25,7 @@ use MinVWS\OpenIDConnectLaravel\Services\JWS\PrivateKeyJWTBuilder;
 
 class OpenIDConnectServiceProvider extends ServiceProvider
 {
+    #[\Override]
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__ . '/../config/oidc.php', 'oidc');
