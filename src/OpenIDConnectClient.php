@@ -40,11 +40,13 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
         $this->openIDConfiguration = $openIDConfiguration;
     }
 
+    #[\Override]
     protected function startSession(): void
     {
         // Laravel magic in the background :)
     }
 
+    #[\Override]
     protected function commitSession(): void
     {
         Session::save();
@@ -53,6 +55,7 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
     /**
      * @param string $key
      */
+    #[\Override]
     protected function getSessionKey($key): mixed
     {
         if (!Session::has($key)) {
@@ -66,6 +69,7 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
      * @param string $key
      * @param mixed $value mixed
      */
+    #[\Override]
     protected function setSessionKey($key, $value): void
     {
         Session::put($key, $value);
@@ -74,6 +78,7 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
     /**
      * @param string $key
      */
+    #[\Override]
     protected function unsetSessionKey($key): void
     {
         Session::remove($key);
@@ -84,6 +89,7 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
      * @return string the JWT payload
      * @throws OpenIDConnectClientException
      */
+    #[\Override]
     protected function handleJweResponse($jwe): string
     {
         if ($this->jweDecrypter === null) {
@@ -102,6 +108,7 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
      * @throws OpenIDConnectClientException
      * @return string|string[]|bool
      */
+    #[\Override]
     protected function getWellKnownConfigValue($param, $default = null): string|array|bool
     {
         if ($this->openIDConfiguration === null) {
@@ -137,6 +144,7 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
      * @return void
      * @throws OpenIDConnectClientException
      */
+    #[\Override]
     public function redirect($url): void
     {
         throw new HttpResponseException(new RedirectResponse($url));
@@ -172,7 +180,8 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
      * @return string
      * @throws OpenIDConnectClientException
      */
-    protected function fetchURL(string $url, string $post_body = null, array $headers = []): string
+    #[\Override]
+    protected function fetchURL(string $url, ?string $post_body = null, array $headers = []): string
     {
         $pendingRequest = Http::withUserAgent($this->getUserAgent())
             ->timeout($this->timeOut)
@@ -211,6 +220,7 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
      *
      * @return int
      */
+    #[\Override]
     public function getResponseCode(): int
     {
         return $this->responseCode ?? 0;
@@ -221,6 +231,7 @@ class OpenIDConnectClient extends \Jumbojett\OpenIDConnectClient
      *
      * @return string|null
      */
+    #[\Override]
     public function getResponseContentType(): ?string
     {
         return $this->internalResponseContentType;

@@ -35,6 +35,7 @@ class JweDecryptService implements JweDecryptInterface
     /**
      * @throws JweDecryptException
      */
+    #[\Override]
     public function decrypt(string $jweString): string
     {
         $jwe = $this->serializerManager->unserialize($jweString);

@@ -17,6 +17,7 @@ class ExceptionHandler implements ExceptionHandlerInterface
     ) {
     }
 
+    #[\Override]
     public function handleExceptionWhileAuthenticate(OpenIDConnectClientException $exception): Response
     {
         if (str_starts_with($exception->getMessage(), 'Error: ')) {
@@ -38,6 +39,7 @@ class ExceptionHandler implements ExceptionHandlerInterface
      * @param OpenIDConnectClientException $exception
      * @return Response
      */
+    #[\Override]
     public function handleExceptionWhileRequestUserInfo(OpenIDConnectClientException $exception): Response
     {
         $this->logger?->error('OIDC Exception occurred while requesting user info', [
@@ -47,6 +49,7 @@ class ExceptionHandler implements ExceptionHandlerInterface
         return $this->defaultResponse($exception);
     }
 
+    #[\Override]
     public function handleException(Exception $exception): Response
     {
         $this->logger?->error('OIDC Generic exception occurred', [
