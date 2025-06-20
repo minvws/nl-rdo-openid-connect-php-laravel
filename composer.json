@@ -45,6 +45,10 @@
         "slevomat/coding-standard": "^8.14",
         "ext-openssl": "*"
     },
+    "suggest": {
+        "ext-gmp": "Enabling GMP is highly recommended for faster cryptographic operations (especially RSA).",
+        "ext-bcmath": "Enabling BCMath is highly recommended for faster cryptographic operations (especially RSA) as an alternative to GMP."
+    },
     "scripts": {
         "test": [
             "vendor/bin/phpunit",
