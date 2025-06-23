@@ -7,6 +7,7 @@ Before using the OpenID Connect package for Laravel, ensure that your developmen
 - PHP 8.1 or higher: The package requires at least PHP version 8.1. Make sure you have PHP installed and configured properly on your system.
 - Laravel: The package is designed to work with Laravel, so you should have a Laravel application set up and running.
 - Composer: Composer is a dependency manager for PHP. You will need Composer installed to install and manage the package and its dependencies.
+- **Recommended:** For optimal cryptographic performance (especially for RSA operations), it is highly recommended to enable the [GMP](https://www.php.net/manual/en/book.gmp.php) or [BCMath](https://www.php.net/manual/en/book.bc.php) PHP extensions. These extensions significantly improve the speed of cryptographic operations used by the underlying JWT library.
 
 If your environment meets these requirements, you can proceed with the installation and configuration of the OpenID Connect package.
 
@@ -74,6 +75,10 @@ Make sure to implement the `LoginResponseHandlerInterface` in your custom respon
 
 ### Disable TLS Certificate Verification
 By default, the package verifies the TLS certificate when making requests to the issuer. If you want to disable TLS certificate verification, you can set the `OIDC_TLS_VERIFY` variable to false in your environment configuration.
+
+### Having Issues?
+
+If you are experiencing timeout issues, please check that the [GMP](https://www.php.net/manual/en/book.gmp.php) or [BCMath](https://www.php.net/manual/en/book.bc.php) PHP extension is installed and enabled. These extensions are recommended for optimal performance, especially for RSA operations, and can significantly speed up cryptographic operations used by the underlying JWT library.
 
 ## Contributing
 If you encounter any issues or have suggestions for improvements, please feel free to open an issue or submit a pull request on the GitHub repository of this package.
