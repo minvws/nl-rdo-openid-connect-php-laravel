@@ -620,6 +620,7 @@ class LoginControllerResponseTest extends TestCase
             idTokenSigningAlgValuesSupported: ["RS256"],
             userinfoEndpoint: "https://provider.example.com/userinfo",
             codeChallengeMethodsSupported: $codeChallengeMethodsSupported,
+            endSessionEndpoint: "https://provider.example.com/endSession",
         );
     }
 
