@@ -80,6 +80,6 @@ jobs:
 
             - name: 'Run SonarQube cloud scanner'
               if: ${{ matrix.php == env.LATEST_SUPPORTED_PHP_VERSION }}
-              uses: minvws/nl-irealisatie-generic-pipelines/.github/actions/sonarcloud@main
+              uses: minvws/action-sonarcube-cloud@update-action
               with:
                 sonar-token: ${{ secrets.SONAR_TOKEN }}
