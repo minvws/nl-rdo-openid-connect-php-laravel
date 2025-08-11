@@ -1,6 +1,8 @@
 # OpenID Connect Package for Laravel
 This package is an OpenID Connect implementation for Laravel, based on the [jumbojett/OpenID-Connect-PHP](https://github.com/jumbojett/OpenID-Connect-PHP) package. It provides a convenient way to integrate OpenID Connect into your Laravel application.
 
+Just an addition to try and test out a fork :)
+
 ## Requirements
 Before using the OpenID Connect package for Laravel, ensure that your development environment meets the following requirements:
 
