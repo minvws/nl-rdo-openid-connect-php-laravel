@@ -38,6 +38,7 @@ class OpenIDConfigurationLoaderTest extends TestCase
         $this->assertSame("https://provider.example.com/jwks", $configuration->jwksUri);
         $this->assertSame("https://provider.example.com/token", $configuration->tokenEndpoint);
         $this->assertSame("https://provider.example.com/userinfo", $configuration->userinfoEndpoint);
+        $this->assertSame("https://provider.example.com/logout", $configuration->endSessionEndpoint);
     }
 
     public function testConfigurationIsLoadedMultipleTimesWhenNotCached(): void
@@ -60,6 +61,7 @@ class OpenIDConfigurationLoaderTest extends TestCase
         $this->assertSame("https://provider.example.com/jwks", $configuration->jwksUri);
         $this->assertSame("https://provider.example.com/token", $configuration->tokenEndpoint);
         $this->assertSame("https://provider.example.com/userinfo", $configuration->userinfoEndpoint);
+        $this->assertSame("https://provider.example.com/logout", $configuration->endSessionEndpoint);
     }
 
     public function testConfigurationIsCached(): void
@@ -87,6 +89,7 @@ class OpenIDConfigurationLoaderTest extends TestCase
         $this->assertSame("https://provider.example.com/jwks", $configuration->jwksUri);
         $this->assertSame("https://provider.example.com/token", $configuration->tokenEndpoint);
         $this->assertSame("https://provider.example.com/userinfo", $configuration->userinfoEndpoint);
+        $this->assertSame("https://provider.example.com/logout", $configuration->endSessionEndpoint);
     }
 
     public function testLoaderThrowsExceptionWhenProviderReturns400ResponseCode(): void
@@ -198,6 +201,7 @@ class OpenIDConfigurationLoaderTest extends TestCase
         $this->assertEmpty($configuration->authorizationEndpoint);
         $this->assertEmpty($configuration->jwksUri);
         $this->assertEmpty($configuration->tokenEndpoint);
+        $this->assertEmpty($configuration->userinfoEndpoint);
     }
 
     public function testConfigurationIsLoadedMultipleTimesWhenCacheStoreIsNull(): void
@@ -221,6 +225,7 @@ class OpenIDConfigurationLoaderTest extends TestCase
         $this->assertSame("https://provider.example.com/jwks", $configuration->jwksUri);
         $this->assertSame("https://provider.example.com/token", $configuration->tokenEndpoint);
         $this->assertSame("https://provider.example.com/userinfo", $configuration->userinfoEndpoint);
+        $this->assertSame("https://provider.example.com/logout", $configuration->endSessionEndpoint);
     }
 
     protected function fakeSuccessfulResponse(): void
@@ -264,7 +269,8 @@ class OpenIDConfigurationLoaderTest extends TestCase
                 ],
                 "code_challenge_methods_supported" => [
                     "S256"
-                ]
+                ],
+                "end_session_endpoint" => "https://provider.example.com/logout"
             ])
         ]);
     }

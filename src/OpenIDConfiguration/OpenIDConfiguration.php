@@ -58,6 +58,7 @@ class OpenIDConfiguration
         public array $idTokenSigningAlgValuesSupported = [],
         public string $userinfoEndpoint = '',
         public array $codeChallengeMethodsSupported = [],
+        public string $endSessionEndpoint = '',
     ) {
     }
 }

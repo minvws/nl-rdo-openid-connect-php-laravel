@@ -91,7 +91,8 @@ class OpenIDConfigurationLoader
             subjectTypesSupported: $response->json('subject_types_supported', []),
             idTokenSigningAlgValuesSupported: $response->json('id_token_signing_alg_values_supported', []),
             userinfoEndpoint: $response->json('userinfo_endpoint', ''),
-            codeChallengeMethodsSupported: $response->json('code_challenge_methods_supported', [])
+            codeChallengeMethodsSupported: $response->json('code_challenge_methods_supported', []),
+            endSessionEndpoint: $response->json('end_session_endpoint', ''),
         );
     }
 
