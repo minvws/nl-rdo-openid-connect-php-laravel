@@ -10,6 +10,7 @@ on:
 
 env:
   LATEST_SUPPORTED_PHP_VERSION: 8.4
+  LATEST_SUPPORTED_LARAVEL_VERSION: 12.*
 
 jobs:
     run-tests:
@@ -79,7 +80,7 @@ jobs:
               run: vendor/bin/phpcs
 
             - name: 'Run SonarQube cloud scanner'
-              if: ${{ matrix.php == env.LATEST_SUPPORTED_PHP_VERSION }}
-              uses: minvws/nl-irealisatie-generic-pipelines/.github/actions/sonarcloud@main
+              if: ${{ matrix.php == env.LATEST_SUPPORTED_PHP_VERSION && matrix.laravel == env.LATEST_SUPPORTED_LARAVEL_VERSION }}
+              uses: minvws/action-sonarqube@v1
               with:
                 sonar-token: ${{ secrets.SONAR_TOKEN }}
