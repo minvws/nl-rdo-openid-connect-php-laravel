@@ -7,7 +7,7 @@ namespace MinVWS\OpenIDConnectLaravel\Tests\Unit\Services\JWE;
 use Jose\Component\Core\JWKSet;
 use Jose\Component\Encryption\JWE;
 use Jose\Component\Encryption\JWEDecrypter;
-use Jose\Component\Encryption\Serializer\JWESerializerManager;
+use MinVWS\OpenIDConnectLaravel\Services\JWE\JweSerializerManagerInterface;
 use Jose\Component\KeyManagement\JWKFactory;
 use JsonException;
 use MinVWS\OpenIDConnectLaravel\Services\JWE\JweDecryptException;
@@ -123,7 +123,7 @@ class JweDecryptServiceTest extends TestCase
             ->andReturn(null);
 
         $decryptionKeySet = Mockery::mock(JWKSet::class);
-        $serializerManager = Mockery::mock(JWESerializerManager::class);
+        $serializerManager = Mockery::mock(JweSerializerManagerInterface::class);
         $serializerManager
             ->shouldReceive('unserialize')
             ->with('something')

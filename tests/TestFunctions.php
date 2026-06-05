@@ -8,8 +8,6 @@ use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Core\JWK;
 use Jose\Component\Encryption\Algorithm\ContentEncryption\A128CBCHS256;
 use Jose\Component\Encryption\Algorithm\KeyEncryption\RSAOAEP;
-use Jose\Component\Encryption\Compression\CompressionMethodManager;
-use Jose\Component\Encryption\Compression\Deflate;
 use Jose\Component\Encryption\JWEBuilder;
 use Jose\Component\Encryption\Serializer\CompactSerializer;
 use Jose\Component\KeyManagement\JWKFactory;
@@ -23,9 +21,7 @@ function buildJweString(string $payload, JWK $recipient): string
 {
     // Create the JWE builder object
     $jweBuilder = new JWEBuilder(
-        new AlgorithmManager([new RSAOAEP()]),
-        new AlgorithmManager([new A128CBCHS256()]),
-        new CompressionMethodManager([new Deflate()])
+        new AlgorithmManager([new RSAOAEP(), new A128CBCHS256()])
     );
 
     // Build the JWE
@@ -35,7 +31,6 @@ function buildJweString(string $payload, JWK $recipient): string
         ->withSharedProtectedHeader([
             'alg' => 'RSA-OAEP',
             'enc' => 'A128CBC-HS256',
-            'zip' => 'DEF',
         ])
         ->addRecipient($recipient)
         ->build();

@@ -30,14 +30,14 @@
         }
     },
     "require": {
-        "php": ">=8.1",
+        "php": ">=8.2",
         "jumbojett/openid-connect-php": "^1.0.2",
         "guzzlehttp/guzzle": "^7.5",
-        "illuminate/contracts": "^10.0||^11.0||^12.0",
-        "web-token/jwt-library": "^3.4"
+        "illuminate/contracts": "^10.0||^11.0||^12.0||^13.0",
+        "web-token/jwt-library": "^4.1"
     },
     "require-dev": {
-        "orchestra/testbench": "^8.0||^9.0||^10.0",
+        "orchestra/testbench": "^8.0||^9.0||^10.0||^11.0",
         "phpunit/phpunit": "^10.0||^11.0||^12.0",
         "vimeo/psalm": "^5.8||^6.0",
         "phpstan/phpstan": "^1.10",
