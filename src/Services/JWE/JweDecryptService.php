@@ -8,26 +8,15 @@ use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Core\JWKSet;
 use Jose\Component\Encryption\Algorithm\ContentEncryption\A128CBCHS256;
 use Jose\Component\Encryption\Algorithm\KeyEncryption\RSAOAEP;
-use Jose\Component\Encryption\Compression\CompressionMethodManager;
-use Jose\Component\Encryption\Compression\Deflate;
 use Jose\Component\Encryption\JWEDecrypter;
-use Jose\Component\Encryption\Serializer\CompactSerializer;
-use Jose\Component\Encryption\Serializer\JWESerializerManager;
 
 class JweDecryptService implements JweDecryptInterface
 {
-    /**
-     * @param JWKSet $decryptionKeySet
-     * @param JWESerializerManager $serializerManager
-     * @param JWEDecrypter $jweDecrypter
-     */
     public function __construct(
         protected JWKSet $decryptionKeySet,
-        protected JWESerializerManager $serializerManager = new JWESerializerManager([new CompactSerializer()]),
+        protected JweSerializerManagerInterface $serializerManager = new NativeJweSerializerManager(),
         protected JWEDecrypter $jweDecrypter = new JWEDecrypter(
-            new AlgorithmManager([new RSAOAEP()]),
-            new AlgorithmManager([new A128CBCHS256()]),
-            new CompressionMethodManager([new Deflate()])
+            new AlgorithmManager([new RSAOAEP(), new A128CBCHS256()])
         ),
     ) {
     }

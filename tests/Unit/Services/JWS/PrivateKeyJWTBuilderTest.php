@@ -7,14 +7,11 @@ namespace MinVWS\OpenIDConnectLaravel\Tests\Unit\Services\JWS;
 use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\KeyManagement\JWKFactory;
 use Jose\Component\Signature\Algorithm\RS256;
-use Jose\Component\Signature\JWS;
 use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\JWSVerifier;
 use Jose\Component\Signature\Serializer\CompactSerializer;
 use Jose\Component\Signature\Serializer\JWSSerializerManager;
-use Jose\Component\Signature\Serializer\Serializer;
 use MinVWS\OpenIDConnectLaravel\Services\JWS\PrivateKeyJWTBuilder;
-use Mockery;
 use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use OpenSSLAsymmetricKey;
 use PHPUnit\Framework\TestCase;
@@ -60,37 +57,19 @@ class PrivateKeyJWTBuilderTest extends TestCase
 
     public function testPayload(): void
     {
-        $mockSerializer = Mockery::mock(Serializer::class);
-        $mockSerializer
-            ->shouldReceive('serialize')
-            ->withArgs(function ($jws, $index) {
-                /** @var JWS $jws */
-                $this->assertInstanceOf(JWS::class, $jws);
-                $this->assertSame(0, $index);
+        $jws = $this->generateJws('client_id', 'audience');
 
-                $payload = json_decode($jws->getPayload(), true);
+        $serializerManager = new JWSSerializerManager([
+            new CompactSerializer(),
+        ]);
+        $payload = json_decode($serializerManager->unserialize($jws)->getPayload(), true);
 
-                $iat = $payload['iat'];
-                $this->assertSame($iat + $this->tokenLifetimeInSeconds, $payload['exp']);
-
-                $this->assertSame('client_id', $payload['iss']);
-                $this->assertSame('client_id', $payload['sub']);
-                $this->assertSame('audience', $payload['aud']);
-                $this->assertNotEmpty($payload['jti']);
-
-                return true;
-            });
-
-        $builder = new PrivateKeyJWTBuilder(
-            'client_id',
-            new JWSBuilder($this->algorithmManager),
-            getJwkFromResource($this->privateKeyResource),
-            'RS256',
-            $mockSerializer,
-            $this->tokenLifetimeInSeconds,
-        );
-
-        $builder->__invoke('audience');
+        $iat = $payload['iat'];
+        $this->assertSame($iat + $this->tokenLifetimeInSeconds, $payload['exp']);
+        $this->assertSame('client_id', $payload['iss']);
+        $this->assertSame('client_id', $payload['sub']);
+        $this->assertSame('audience', $payload['aud']);
+        $this->assertNotEmpty($payload['jti']);
     }
 
     public function testSignature(): void

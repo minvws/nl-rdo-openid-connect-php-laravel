@@ -4,7 +4,7 @@ This package is an OpenID Connect implementation for Laravel, based on the [jumb
 ## Requirements
 Before using the OpenID Connect package for Laravel, ensure that your development environment meets the following requirements:
 
-- PHP 8.1 or higher: The package requires at least PHP version 8.1. Make sure you have PHP installed and configured properly on your system.
+- PHP 8.2 or higher: The package requires at least PHP version 8.2. Make sure you have PHP installed and configured properly on your system.
 - Laravel: The package is designed to work with Laravel, so you should have a Laravel application set up and running.
 - Composer: Composer is a dependency manager for PHP. You will need Composer installed to install and manage the package and its dependencies.
 - **Recommended:** For optimal cryptographic performance (especially for RSA operations), it is highly recommended to enable the [GMP](https://www.php.net/manual/en/book.gmp.php) or [BCMath](https://www.php.net/manual/en/book.bc.php) PHP extensions. These extensions significantly improve the speed of cryptographic operations used by the underlying JWT library.
